@@ -1,0 +1,23 @@
+/attendance-webapp
+├── /templates
+│   ├── index.html
+│   ├── signin.html
+│   ├── thankyouregister.html
+|   ├── adminlogin.html
+│   ├── admindashboard.html
+├── /static
+│   ├── styles
+│   ├── pictures
+├── /blueprints
+│   ├── __init__.py
+│   ├── forms.py
+├── app.py
+├── config.py
+├── models.py
+├── routes.py
+├── initializeDatabase.py
+├── migrations/  # Generated after migration initialization
+├── attendance.db  # Generated SQLite database
+├── requirements.txt
+├── structure.txt
+├── README.md

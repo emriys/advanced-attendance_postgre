@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/adminsettingsStyle.css')}}">
+
+    <title>Admin Settings</title>
+</head>
+
+<body>
+    <header>
+        <div class="navbtn">
+            <button class="openbtn" onclick="openNav()">☰</button>
+            <div id="mySidebar" class="sidebar">
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+                <a href="dashboard">Dashboard</a>
+                <a href="attendance_logs">Attendance Logs</a>
+                <a href="settings">Settings</a>
+            </div>
+        </div>
+        <div class="heading">
+            <img src="{{url_for('static', filename='images/LOGO.jpg')}}" alt="NIESAT Logo" width="100" height="100" />
+
+            <div>
+                <h3>NIESAT Control Centre</h3>
+                <h4>Kwara State Chapter</h4>
+            </div>
+        </div>
+    </header>
+
+
+    <div class="row mt-4">
+        <h1 class="text-center">Settings</h1>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title toggle-heading" data-target='allow_form' onclick="toggleForm(this)">Allow Attendance</h5>
+                <form method="POST" class="ajax-form toggle-form hidden" action="/forms/allow_attendance" id="allow_form">
+                    <div class="msg-area"></div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="allow_attendance">Active: </label>
+                        <span id="allow_attendance"></span>
+                        <select class="form-select" id="allow_attendance" name="allow_attendance" required="">
+                            <option value="">Select an option</option>
+                            <option value="enabled">Enable</option>
+                            <option value="disabled">Disable</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" id="submit" name="submit" type="submit">Update</button>
+                </form>
+
+                <hr>
+                <h5 class="card-title toggle-heading" data-target='attend_time' onclick="toggleForm(this)">Attendance
+                    Time</h5>
+                <form method="POST" class="ajax-form toggle-form hidden" action="/forms/attend_time_update"
+                    id="attend_time">
+                    <div class="msg-area"></div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="early_start">Early Arrival Start</label>
+                        <input class="form-control" id="early_start" maxlength="5" minlength="1" name="early_start"
+                            required="" type="time" value="" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="late_start">Late Arrival Start</label>
+                        <input class="form-control" id="late-start" maxlength="5" minlength="1" name="late_start"
+                            required="" type="time" name="late-start" value="" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="late_end">Late Arrival End</label>
+                        <input class="form-control" id="late-end" maxlength="5" minlength="1" name="late_end"
+                            required="" type="time" name="late-end" value="" required>
+                    </div>
+
+                    <button class="btn btn-primary" id="submit" name="submit" type="submit">Update</button>
+                </form>
+
+                <hr>
+                <h5 class="card-title toggle-heading" data-target='meeting_day_form' onclick="toggleForm(this)">Meeting Day</h5>
+                <form method="POST" class="ajax-form toggle-form hidden" action="/forms/meeting_day_update" id="meeting_day_form">
+                    <div class="msg-area"></div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="meeting_day">Meeting Day: </label>
+                        <span id="meeting_day"></span>
+                        <select class="form-select" id="meeting_day" name="meeting_day" required="">
+                            <option value="">Select a day</option>
+                            <option value="sunday">Sunday</option>
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                        </select>
+
+                    </div>
+
+                    <button class="btn btn-primary" id="submit" name="submit" type="submit">Update</button>
+                </form>
+
+                <hr>
+                <h5 class="card-title toggle-heading" data-target='late-fee-form' onclick="toggleForm(this)">Lateness
+                    Fine</h5>
+                <form method="POST" class="ajax-form toggle-form hidden" action="/forms/late_fee_update"
+                    id="late-fee-form">
+                    <div class="msg-area"></div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="late-fee">Amount</label>
+                        <input class="form-control" id="late-fee-id" name="late-fee" required="" type="number"
+                            placeholder="" value="">
+                    </div>
+
+                    <button class="btn btn-primary" id="submit" name="submit" type="submit">Update</button>
+                </form>
+
+                <hr>
+                <h5 class="card-title toggle-heading" data-target="monthly-due-form" onclick="toggleForm(this)">Monthly
+                    Due</h5>
+                <form method="POST" class="ajax-form toggle-form hidden" action="/forms/due_amount_update"
+                    id="monthly-due-form">
+                    <div class="msg-area"></div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="due-fee">Amount</label>
+                        <input class="form-control" id="due-id" name="due-fee" required="" type="number" placeholder=''
+                            value="">
+                    </div>
+
+                    <button class="btn btn-primary" id="submit" name="submit" type="submit">Update</button>
+                </form>
+
+                <hr>
+                <h5 class="card-title toggle-heading" data-target="payment-acct-dets" onclick="toggleForm(this)">Payment
+                    Account
+                    Details</h5>
+                <form method="POST" class="ajax-form toggle-form hidden" action="/forms/account_details"
+                    id="payment-acct-dets">
+                    <div class="msg-area"></div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="acct-num-id">Account Number</label>
+                        <input class="form-control" id="acct-num-id" maxlength="10" minlength="10" name="acct-num"
+                            required="" type="number" placeholder="" value="" pattern="d{10}"
+                            title="Must be only ten digits" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="acct-name-id">Account Name</label>
+                        <input class="form-control" id="acct-name-id" name="acct-name" required="" type="text"
+                            placeholder="" value="">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="bank-name-id">Bank Name</label>
+                        <input class="form-control" id="bank-name-id" name="bank-name" required="" type="text"
+                            placeholder="" value="">
+                    </div>
+
+                    <button class="btn btn-primary" id="submit" name="submit" type="submit">Update</button>
+                </form>
+
+                <hr>
+                <h5 class="card-title toggle-heading" data-target="change_login_form" onclick="toggleForm(this)">Change
+                    username and password</h5>
+                <form class="ajax-form toggle-form hidden" action="/forms/change_login" method="POST"
+                    id="change_login_form">
+                    <div class="msg-area"></div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="username">Username</label>
+                        <input class="form-control" id="username" maxlength="15" minlength="5" name="username" required=""
+                            type="text" value="" pattern="[a-zA-Z][a-zA-Z0-9]*"
+                            title="Username must start with letters and contain only alphanumeric characters" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="passwd">Password</label>
+                        <input class="form-control" id="passwd-id" name="passwd" minlength="8" required=""
+                            type="password" value="">
+                    </div>
+
+                    <!-- <input class="btn btn-primary" onclick="submitForm('/forms/change_login', 'change_login_form')" id="submit" name="submit" type="submit" value="Update"> -->
+                    <button class="btn btn-primary" id="submit" name="submit" type="submit">Update</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="popup-container" id="popupContainer">
+        <h2>Confirm Submission</h2>
+        <p>Are you sure you want to submit the changes?</p>
+        <div class="popup-buttons">
+            <button id="confirmBtn">Yes</button>
+            <button id="cancelBtn">Cancel</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        window.onload = function() {
+            document.querySelectorAll('input').forEach(input => input.value = "");
+        };
+        document.addEventListener("DOMContentLoaded", function () {
+            const socket = io(
+            {
+                transports: ["websocket"] // Force WebSockets instead of polling
+            });
+
+            socket.on("connect", () => {
+                console.log("Connected to WebSocket for Admin Settings.");
+                socket.emit("fetch_admin_settings");  // Request latest settings on connect
+            });
+        
+            socket.on("admin_settings_update", (data) => {
+                console.log("Received updated admin settings:", data);
+                updateSettings(data);
+            });
+
+            function updateSettings(data) {
+                if (data) {
+                    document.getElementById('late-fee-id').placeholder = data.lateness_fine || "N/A";
+                    document.getElementById('due-id').placeholder = data.monthly_due || "N/A";
+                    document.getElementById('acct-num-id').placeholder = data.account_number || "N/A";
+                    document.getElementById('acct-name-id').placeholder = data.account_name || "N/A";
+                    document.getElementById('bank-name-id').placeholder = data.bank_name || "N/A";
+                    document.getElementById('username').placeholder = data.admin_username || "N/A";
+                    document.getElementById('meeting_day').innerHTML = data.meeting_day || "N/A"
+                    document.getElementById('allow_attendance').innerHTML = data.allow_attendance || "N/A"
+                }
+                else {
+                    alert("NO DATA received from Server!!")
+                }
+            }
+        });
+
+        // Attach event listeners to all forms with a common class
+        document.querySelectorAll('.ajax-form').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault(); // Prevent default form submission
+                showPopup();
+
+                const confirmSubmit = document.getElementById('confirmBtn');
+                confirmSubmit.addEventListener('click', function () {
+                    hidePopup();
+
+                    const formData = new FormData(form); // Get form data
+                    //const alert = form.getElementById('msg-area');
+                    const targetDiv = form.querySelector('.msg-area');
+
+                    // Fetch the form's action URL and method dynamically
+                    const actionUrl = form.getAttribute('action');
+                    const method = form.getAttribute('method') || 'POST';
+
+                    fetch(actionUrl, {
+                        method: method,
+                        body: formData,
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`Error: ${response.status}`);
+                            }
+                            return response.json(); // Adjust response handling as needed
+                        })
+                        .then((data) => {
+                            //console.log('Success:', data); // Handle success response
+                            if (data.success) {
+                                if (targetDiv) {
+                                    targetDiv.innerHTML = data.message;
+                                    targetDiv.style.color = "#4CAF50"; // Green text for success
+                                }
+
+                                // Clear all input fields in the form
+                                form.querySelectorAll('input').forEach((input) => {
+                                    if (input.type !== 'password') {
+                                        input.value = '';
+                                    }
+                                });
+                            }
+                            // Clear password fields regardless of the outcome
+                            form.querySelectorAll('input[type="password"]').forEach((input) => {
+                                input.value = '';
+                            });
+
+                            // Hide message after a delay
+                            setTimeout(() => {
+                                targetDiv.innerHTML = "";
+                                fetchData();
+                            }, 3000);
+                        })
+                        .catch((error) => {
+                            //console.error('Error:', error); // Handle errors
+                            // Clear password fields in case of error
+                            form.querySelectorAll('input[type="password"]').forEach((input) => {
+                                input.value = '';
+                            });
+                            // Show an error message in the UI
+                            alert('Submission failed. Please try again.');
+                        });
+
+                }, { once: true }); // Ensure the click event fires only once
+
+
+            });
+        });
+
+        // Function to toggle form visibility
+        function toggleForm(headingElement) {
+            // Get the ID of the target form from the data attribute
+            const targetFormId = headingElement.getAttribute('data-target');
+            const form = document.getElementById(targetFormId);
+
+            // Toggle the hidden class for the form
+            //form.classList.toggle('hidden');
+            form.classList.toggle('visible');
+
+            // Toggle the shown class for the heading
+            headingElement.classList.toggle('shown');
+        }
+
+        // Side bar config
+        function openNav() {
+            document.getElementById("mySidebar").style.width = "230px";
+        }
+
+        // Set the width of the side navigation to 0 and the left margin of the page content to 0
+        function closeNav() {
+            document.getElementById("mySidebar").style.width = "0";
+            //document.getElementById("main").style.marginLeft = "0";
+            document.querySelector('#body').addEventListener('click', closeNav);
+        }
+
+        // Function to show the popup window
+        function showPopup() {
+            document.getElementById('overlay').style.display = 'block'
+            document.getElementById('popupContainer').style.display = 'block';
+        }
+
+        // Function to hide the popup window
+        function hidePopup() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('popupContainer').style.display = 'none';
+        }
+
+        // Handle cancellation when the user clicks "Cancel"
+        document.getElementById('cancelBtn').addEventListener('click', function () {
+            // Hide the popup window
+            hidePopup();
+        });
+
+    </script>
+<!-- <script>// Fetch the previously set parameters from server and display as placeholder
+    function fetchData() {
+
+        const url = '/admin/settings'
+
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                if (response.ok) {
+                    //console.log(response);
+                    return response.json();
+                }
+                throw new Error('Failed to fetch current settings: Server Error');
+            })
+            .then(data => {
+                if (data) {
+
+                    document.getElementById('late-fee-id').placeholder = data.lateness_fine || "N/A";  //data.balance
+                    document.getElementById('due-id').placeholder = data.monthly_due || "N/A";
+                    document.getElementById('acct-num-id').placeholder = data.account_number || "N/A";
+                    document.getElementById('acct-name-id').placeholder = data.account_name || "N/A";
+                    document.getElementById('bank-name-id').placeholder = data.bank_name || "N/A";
+                    document.getElementById('username').placeholder = data.admin_username || "N/A";
+                    document.getElementById('meeting_day').innerHTML = data.meeting_day || "N/A"
+                    document.getElementById('allow_attendance').innerHTML = data.allow_attendance || "N/A"
+                }
+                else {
+                    alert("NO DATA!!")
+                    //console.log("NO DATA!!")
+                }
+            })
+            .catch(error => {
+                //console.log(error);
+                //alert("Failed to get settings data.");
+                return
+            });
+
+        setTimeout(fetchData, 30000); // Call itself after a 30 sec delay
+    };
+    fetchData();
+</script> -->
+</body>
+
+</html>

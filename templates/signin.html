@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Sign-In Attendance</title>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/signupstyle.css')}}">
+
+	<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+	<script>
+		// Initialize FingerprintJS
+		const fpPromise = FingerprintJS.load();
+	</script>
+
+</head>
+
+<body>
+	<header>
+		<div class="heading">
+			<a href="{{ url_for('routes.index')}}"><img src="{{url_for('static', filename='images/LOGO.jpg')}}"
+					alt="NIESAT Logo" width="80" height="80" /></a>
+			<h2> Mark Attendance Register</h2>
+		</div>
+	</header>
+
+	<main>
+		<form action="{{ url_for('routes.signin') }}" id="signin" class="form" method="POST">
+			<h2>Sign-In for Today</h2>
+
+			<div class="msg-area"></div>
+			<div>{{ regErrorMsg }}</div>
+
+			{{ form.hidden_tag() }}
+
+			<div>
+				{{ form.last_name.label }}
+				{{ form.last_name}}
+				{% for error in form.last_name.errors %}
+				<p class="error">{{ error }}</p>
+				{% endfor %}
+			</div>
+
+			<div>
+				{{ form.state_code.label }}
+				{{ form.state_code(
+				pattern="^[Kk][Ww]/\d{2}[a-cA-C]/\d{4}$",
+				title="Must contain correct and complete state code: KW/XX/XXXX"
+				) }}
+				{% for error in form.state_code.errors %}
+				<p class="error">{{ error }}</p>
+				{% endfor %}
+			</div>
+			
+			{{ form.submit (class_="button") }}
+			
+
+			<p>New Member? <a href="{{ url_for('routes.register') }}">Register</a></p>
+			<p>Already signed in? <a href="{{ url_for('routes.history') }}">Check Attendance History</a></p>
+		</form>
+	</main>
+
+</body>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Admin Attendance View</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/admindashStyle.css')}}">
+</head>
+
+<body>
+    <header>
+        <div class="navbtn">
+            <button class="openbtn" onclick="openNav()">☰</button>
+            <div id="mySidebar" class="sidebar">
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+                <a href="dashboard">Dashboard</a>
+                <a href="attendance_logs">Attendance Logs</a>
+                <a href="settings">Settings</a>
+            </div>
+        </div>
+        <div class="heading">
+            <img src="{{url_for('static', filename='images/LOGO.jpg')}}" alt="NIESAT Logo" width="100" height="100" />
+
+            <div>
+                <h3>NIESAT Control Centre</h3>
+                <h4>Kwara State Chapter</h4>
+            </div>
+        </div>
+    </header>
+
+    <div class="reform">
+        <div class="container mt-4">
+            <h1 class="text-center">Attendance Log</h1>
+            <br>
+            <form class="mb-3" method="POST">
+                <h6>Select a date range:</h6>
+                <label for="date">Start Date: </label>
+                <input type="date" name="date" id="dateInput" class="form-control mb-2" placeholder="Start date"
+                    required="" onchange="document.getElementById('endDateInput').min = this.value">
+                <label for="endDate">End Date: </label>
+                <input type="date" name="endDate" id="endDateInput" class="form-control mb-2" placeholder="End date"
+                    required="">
+                <button class="btn btn-primary" id="check-button" type="button">Check</button>
+            </form>
+            <div class="input-group">
+                <select name="format" class="form-select" id="formatDropdown" required>
+                    <option value="" selected>Select File Format</option>
+                    <option value="xlsx">Excel (.xlsx)</option>
+                    <option value="pdf">PDF (.pdf)</option>
+                </select>
+                <button type="submit" class="btn btn-primary" id="download-button">Download</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table_reform table table-striped mt-4">
+                <thead>
+                    <tr>
+                        <th>S/N</th> <!-- Serial Number Column -->
+                        <th>First Name</th>
+                        <th>Middle Name</th>
+                        <th>Last Name</th>
+                        <th>State Code</th>
+                        <th>Meeting Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if attendance_data %}
+                    {% for log in attendance_data %}
+                    <tr>
+                        <td>{{ loop.index }}</td> <!-- Serial Number -->
+                        <td>{{ log.first_name }}</td>
+                        <td>{{ log.middle_name }}</td>
+                        <td>{{ log.last_name }}</td>
+                        <td>{{ log.state_code }}</td>
+                        <td>{{ log.meeting_date }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">No attendance records found for today.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <!-- Overlay with loading spinner and message -->
+            <div id="overlay" class="overlay">
+                <div id="loadingSpinner" class="spinner"></div>
+                <div id="messagePopup" class="message-popup"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        window.onload = function() {
+            document.querySelectorAll('input').forEach(input => input.value = "");
+        };
+        document.addEventListener("DOMContentLoaded", () => {
+            const checkButton = document.getElementById('check-button');
+            const downloadButton = document.getElementById('download-button');
+            const formatDropdown = document.getElementById("formatDropdown");
+            const dateInput = document.getElementById('dateInput');
+            const endDateInput = document.getElementById('endDateInput');
+            const tableBody = document.querySelector('.table tbody');
+            const overlay = document.getElementById("overlay");
+            const spinner = document.getElementById("loadingSpinner");
+            const messagePopup = document.getElementById("messagePopup");
+
+            // Function to show the spinner
+            const showSpinner = (message) => {
+                overlay.style.display = "flex";
+                spinner.style.display = "block";
+                messagePopup.innerText = message;
+                messagePopup.style.display = "block";
+            };
+
+            // Function to hide the spinner
+            const hideSpinner = () => {
+                overlay.style.display = "none";
+                spinner.style.display = "none";
+                messagePopup.innerText = "";
+                messagePopup.style.display = "none";
+            };
+
+            // Function to fetch attendance logs
+            const fetchAttendanceLogs = (start_date,end_date) => {
+                message = "Loading..."
+                showSpinner("Loading Table...");
+                // Construct the fetch URL
+                const url = start_date && end_date ? `/admin/attendance_logs?start_date=${start_date}&end_date=${end_date}` : `/admin/attendance_logs`;
+
+                // Fetch attendance logs from the server
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            //console.log(response);
+                            return response.json();
+                        }
+                        throw new Error("Failed to fetch attendance logs: Server returned an unexpected response.");
+                        //return response.json();
+                    })
+                    .then(data => {
+                        // Clear the existing table rows
+                        tableBody.innerHTML = "";
+                        //console.log(data);
+
+                        // Populate the table with the fetched data
+                        if (data.length > 0) {
+                            data.forEach((log, index) => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                <td>${index + 1}</td> <!-- Serial Number -->
+                                <td>${log.first_name}</td>
+                                <td>${log.middle_name}</td>
+                                <td>${log.last_name}</td>
+                                <td>${log.state_code}</td>
+                                <td>${log.meeting_date}</td>
+                            `;
+                                tableBody.appendChild(row);
+                            });
+                        } else {
+                            // Add a row indicating no records found
+                            const row = document.createElement('tr');
+                            row.innerHTML = ` <td colspan="6" class="text-center">${data.message}</td>`;
+                            //`<td colspan="6" class="text-center">No attendance records found for this date.</td>`;
+
+                            tableBody.appendChild(row);
+                        }
+                    })
+                    .catch(error => {
+                        //console.error(error);
+                        alert("An error occurred while fetching the attendance logs. Please try again.");
+                    })
+                    .finally(() => {
+                        // Hide spinner after the fetch is complete
+                        hideSpinner();
+                    });
+            };
+
+            // Add event listener to "Check" button for querying specific dates
+            checkButton.addEventListener('click', () => {
+
+                const start_date = dateInput.value;
+                const end_date = endDateInput.value;
+                if (!start_date || !end_date) {
+                    alert("Please select a date range before checking.");
+                }
+                else {
+                    // Fetch today's attendance logs on page load
+                    fetchAttendanceLogs(start_date,end_date);
+                }
+            });
+
+            // Handle download button click
+            downloadButton.addEventListener("click", () => {
+                const selectedFormat = formatDropdown.value; // Get selected format
+                const start_date = dateInput.value; // Get selected date
+                const end_date = endDateInput.value;
+                if (selectedFormat && start_date && end_date) {
+                    const url = `/export_attendance?format=${selectedFormat}&start_date=${start_date}&end_date=${end_date}`;
+                    showSpinner("Getting file...");
+                    // Fetch attendance logs from the server
+                    fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error("Failed to fetch attendance file: Server returned an unexpected response.");
+                            }
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            // Create a download link and trigger it
+                            const link = document.createElement('a');
+                            const fileURL = window.URL.createObjectURL(blob);
+                            link.href = fileURL;
+                            if (start_date == end_date) {
+                                link.download = `NIESAT_attendance_${start_date}.${selectedFormat}`;
+                            }else {
+                                link.download = `NIESAT_attendance_${start_date}_to_${end_date}.${selectedFormat}`;
+                            }
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        })
+                        .catch(error => {
+                            //console.error(error);
+                            alert("An error occurred while fetching attendance file. Please try again.");
+                        })
+                        .finally(() => {
+                            // Hide spinner after the fetch is complete
+                            hideSpinner();
+                        });
+                } else {
+                    alert("Please select a format and date before downloading.");
+                }
+            });
+        });
+
+        // Side bar config
+        function openNav() {
+            document.getElementById("mySidebar").style.width = "230px";
+        }
+
+        // Set the width of the side navigation to 0 and the left margin of the page content to 0
+        function closeNav() {
+            document.getElementById("mySidebar").style.width = "0";
+            //document.getElementById("main").style.marginLeft = "0";
+            document.querySelector('#body').addEventListener('click', closeNav);
+        }
+
+        // Get today's date in 'YYYY-MM-DD' format
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+
+        // Set the max attribute of the start and end date inputs
+        document.getElementById('dateInput').setAttribute('max', formattedDate);
+        document.getElementById('endDateInput').setAttribute('max', formattedDate);
+
+        // Call functions on page load
+        window.addEventListener('load', () => {
+            document.getElementById('dateInput').innerHTML = "";
+            document.getElementById('endDateInput').innerHTML = "";
+        });
+    </script>
+
+</body>
+
+</html>

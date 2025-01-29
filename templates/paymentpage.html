@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/paymentStyle.css')}}">
+
+    <title>Latecomer Payment</title>
+</head>
+
+<body>
+    <header>
+        <img src="{{url_for('static', filename='images/LOGO.jpg')}}" alt="NIESAT Logo" width="80" height="80" />
+        <h1> Late Sign-In</h1>
+    </header>
+    <main>
+        <div class="payment-container">
+            <div class="payment-header">
+                <h1>Payment Required</h1>
+                <div class="payment-header-compact">
+                    <p style="color: red;">{{ statecode }}, you have signed in late!</p>
+                    <p>
+                        Please pay the lateness fee to the account below and confirm with an Excecutive.
+                    </p>
+                    <p>OR</p>
+                    <p>Pay in cash directly to an Excecutive.</p>
+                </div>
+            </div>
+
+            <div class="payment-details">
+                <div class="payment-info">
+                    <h3>Account Details</h3>
+
+                    <p class="info-label">BANK NAME</p>
+                    <p class="info-value">{{ bankname }}</p> <!--{{ bankname }}-->
+
+                    <p class="info-label">ACCOUNT NUMBER</p>
+                    <div class="copy-container">
+                        <p class="info-value" id="account-number">{{ acctnum }}</p> <!--{{ acctnumber }}-->
+                        <button class="copy-button" onclick="copyToClipboard('account-number')">
+                            <!-- <span>Copy</span> -->
+                            <!-- <img src="https://img.icons8.com/material-outlined/24/000000/copy.png" alt="Copy Icon"> -->
+                            <!-- <img src="https://img.icons8.com/?size=20&id=kDASkyyiNQDJ&format=png&color=000000" alt="Copy Icon"> -->
+                            <img src="https://img.icons8.com/?size=20&id=LHOx46m7R9rG&format=png&color=000000"
+                                alt="Copy Icon">
+                        </button>
+                    </div>
+
+                    <p class="info-label">ACCOUNT NAME</p>
+                    <p class="info-value">{{ acctname }}</p>
+
+                    <p class="info-label">AMOUNT</p>
+                    <div class="copy-container">
+                        <p class="info-value">NGN <span id="amount">{{ amount }}</span></p>
+                        <button class="copy-button" id="amt_btn" onclick="copyToClipboard('amount')">
+                            <img src="https://img.icons8.com/?size=20&id=LHOx46m7R9rG&format=png&color=000000"
+                                alt="Copy Icon">
+                        </button>
+                    </div>
+
+                    <br>
+                </div>
+            </div>
+            <div class="info-note">
+                <h2>Status: <span id="status"> </span></h2>
+                <p>Waiting for confirmation from the treasurer...</p>
+                <p><i><span style="color:red">*</span> Your attendance will not be registered until payment is approved
+                        by the Treasurer.</i></p>
+            </div>
+            <!-- Notification popup -->
+            <div id="popup-notification" class="popup-notification">Text copied!</div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io("http://127.0.0.1:5000",
+        {
+            transports: ["websocket"] // Force WebSockets instead of polling
+        }); // Connect to WebSocket server
+        
+        const statecode = "{{ statecode }}";
+        const status_show = document.getElementById("status");
+
+        socket.on("connect", () => {
+            //console.log("Connected to WebSocket for Payment Page.");
+            socket.emit("check_payment_status", "{{ statecode }}");  // Request statecode status on connect
+        });
+    
+        socket.on("payment_status_update", (data) => {
+            //console.log("Received payment status update:", data);
+            updatePaymentStatus(data.status);
+        });
+    
+        function updatePaymentStatus(status) {
+            if (status === "Approved") {
+                status_show.innerHTML = status;
+                status_show.style.color = "#4CAF50";
+    
+                setTimeout(() => {
+                    const form = document.createElement("form");
+                    form.method = "POST";
+                    form.action = "{{ url_for('routes.late_reg') }}";  
+    
+                    const params = { statecode: "{{ statecode }}" };
+                    for (const [key, value] of Object.entries(params)) {
+                        const hiddenField = document.createElement("input");
+                        hiddenField.type = "hidden";
+                        hiddenField.name = key;
+                        hiddenField.value = value;
+                        form.appendChild(hiddenField);
+                    }
+    
+                    document.body.appendChild(form);
+                    form.submit();
+                }, 3000);
+            } 
+            else {
+                status_show.innerHTML = status;
+                status_show.style.color = "#FFBF00";
+            }
+        }
+    </script>
+
+
+    <!-- <script>
+        // Poll the server every 3 seconds to check if the status has changed to "Approved"
+        async function fetchData() {
+            var status_show = document.getElementById("status");
+            const response = await fetch("{{ url_for('routes.check_status', statecode=statecode) }}");
+            const data = await response.json();
+            //console.log(data.status);
+            //const status = await response.text();
+            //console.log(status);
+            
+            if (data.status === "Approved") {
+                status_show.innerHTML = "Approved";
+                status_show.style.color = '#4CAF50';
+                setTimeout(function () {
+                    // Create a form dynamically
+                    const form = document.createElement("form");
+                    form.method = "POST";
+                    form.action = "{{ url_for('routes.late_reg') }}";  // Flask route URL
+
+                    // Add hidden input fields for each parameter
+                    const params = {
+                        statecode: "{{ statecode }}"
+                    };
+
+                    // Iterate through the params and add to form
+                    for (const [key, value] of Object.entries(params)) {
+                        const hiddenField = document.createElement("input");
+                        hiddenField.type = "hidden";
+                        hiddenField.name = key;
+                        hiddenField.value = value;
+                        form.appendChild(hiddenField);
+                    }
+
+                    // Append the form to the body and submit
+                    document.body.appendChild(form);
+                    form.submit();
+
+                }, 3000);  // Redirect after a short delay
+            }
+            else {
+                status_show.innerHTML = "Pending";
+                status_show.style.color = '#FFBF00';
+            }
+            setTimeout(fetchData, 5000); // Call itself after a delay
+        };  // Check every 2 seconds
+        fetchData();
+    </script> -->
+
+    <script>
+        // Copy to clipboard function
+        number = document.getElementById('account-number').innerHTML
+        amount = document.getElementById('amount').innerHTML
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            //console.log(text)
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showPopup("Copied ✅");
+                }).catch(err => {
+                    alert("Failed to copy text: ", err)
+                    //console.error("Failed to copy text: ", err);
+                });
+            }
+            else {
+                // TO HANDLE COPYING TO CLIPBOARD INCASE PAGE ISN'T SECURE
+                // Create a temporary <textarea> element
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+
+                // Select the text in the textarea and execute the copy command
+                textarea.select();
+                textarea.setSelectionRange(0, text.length); // For mobile compatibility
+
+                try {
+                    document.execCommand('copy');
+                    //showPopup("Copied: " + text + " \u2713");
+                    showPopup("Copied ✅");
+                } catch (err) {
+                    alert('Fallback error copying text: ', err);
+                    //console.error('Fallback error copying text: ', err);
+                }
+
+                // Remove the temporary textarea element
+                document.body.removeChild(textarea);
+            }
+        }
+
+        function showPopup(message) {
+            const popup = document.getElementById("popup-notification");
+            popup.textContent = message;
+            popup.classList.add("show");
+
+            // Remove the popup after 2 seconds
+            setTimeout(() => {
+                popup.classList.remove("show");
+            }, 2000);
+        }
+    </script>
+</body>
+
+</html>

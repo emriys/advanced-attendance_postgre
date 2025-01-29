@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear User Records</title>
+    <style>
+        #userform {
+            justify-content: center;
+
+        }
+
+        #detailsInputDiv {
+            display: none;
+            margin-top: 10px;
+        }
+
+        #submit {
+            display: none;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        #msgArea {
+            margin: 10px;
+        }
+
+        main {
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Clear User from Database</h1>
+    <main>
+        <div id="msgArea"></div>
+        <form id="userForm" class="form">
+            <div>
+                <label for="actionSelect">Choose an option:</label>
+                <select id="actionSelect" name="actionSelect" onchange="toggleDetailsInput()" required>
+                    <option value="">Select</option>
+                    <option value="attendance">Clear User Attendance</option>
+                    <option value="delete">Delete User</option>
+                </select>
+            </div>
+
+            <div id="detailsInputDiv">
+                <div>
+                    <label for="statecodeInput">State Code:</label>
+                    <input type="text" id="statecodeInput" name="statecode" placeholder="Enter state code" maxlength="11"
+                        minlength="1" pattern="[Kk][Ww]/\d{2}[a-cA-C]/\d{4}"
+                        title="Must contain correct and complete statecode: KW/XXX/XXXX" required>
+                </div>
+                <br>
+                <div>
+                    <label for="nameInput">Last Name:</label>
+                    <input type="text" id="nameInput" name="name" placeholder="Enter Last Name" required>
+                </div>
+            </div>
+
+            <button id="submit" type="button" onclick="handleData()">Authorize</button>
+        </form>
+    </main>
+
+    <script>
+        // JavaScript to toggle input visibility
+        function toggleDetailsInput() {
+            const select = document.getElementById('actionSelect');
+            const statecode = document.getElementById('statecodeInput');
+            const name = document.getElementById('nameInput');
+            const inputDiv = document.getElementById('detailsInputDiv');
+            const btn = document.getElementById('submit');
+
+            if (select.value == '') {
+                submit.style.display = 'none';
+                inputDiv.style.display = 'none'; // Show input field for specific state codes
+            } else {
+                submit.style.display = 'block';
+                inputDiv.style.display = 'block';
+            }
+        }
+
+        function handleData() {
+            event.preventDefault();
+            const actionSelect = document.getElementById('actionSelect').value;
+            const statecode = document.getElementById('statecodeInput').value;
+            const name = document.getElementById('nameInput').value;
+            const form = document.getElementById("userForm");
+
+            if (!actionSelect || !statecode || !name) {
+                msgArea(message="Please enter all details!");
+                alert("Please enter all details.");
+            }
+                
+            const formData = new FormData();
+            if (actionSelect === "attendance" || "delete") {
+                formData.append('action', actionSelect);
+                formData.append('statecode', statecode);
+                formData.append('last_name', name);
+                console.log("All inputted");
+            }
+
+            //console.log(formData);
+
+            fetch("{{url_for('routes.clear_user_logs')}}", {
+                method: "POST",
+                body: formData
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('SERVER ERROR.');
+                })
+                .then((data) => {
+                    msgArea(data.message);
+                })
+                .catch((error) => {
+                    //console.log('Error:', error);
+                    msgArea(message="Failed to clear records!");
+                    //alert("Failed to clear records!")
+                });
+        }
+
+        function msgArea(message) {
+            const msgArea = document.getElementById('msgArea');
+            msgArea.innerHTML = message;
+            setTimeout(() => {
+                msgArea.innerHTML = "";
+            }, 2000);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,31 @@
+# Ignore database files
+# *.db
+# *.sqlite3
+
+# Ignore migration files
+migrations/
+
+reset_db.py
+
+# Ignore virtual environment and variables
+venv/
+.env/
+*.env
+
+# Python
+*.pyc
+# __pycache__/
+*.pyo
+*.pyd
+
+# IDE/editor settings
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.vercel
