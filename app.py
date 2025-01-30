@@ -51,10 +51,28 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 # Database Initialization
+# with app.app_context():
+#     db.create_all()  # Create tables if they don't exist
+#     initialize_admin_settings()  # Initialize AdminSettings
+#     upgrade() # This applies migrations automatically
+
+# Database Initialization
 with app.app_context():
-    db.create_all()  # Create tables if they don't exist
-    initialize_admin_settings()  # Initialize AdminSettings
-    upgrade() # This applies migrations automatically
+    from sqlalchemy import inspect  # Import inside to avoid circular import issues
+    inspector = inspect(db.engine)
+
+    if not inspector.get_table_names():  # Check if database is empty
+        logging.info("Database is empty! Running first-time setup...")
+        db.create_all()  # Create tables only if none exist
+        initialize_admin_settings()  # Initialize AdminSettings
+    
+    # Apply migrations if the "migrations/" folder exists
+    if os.path.exists("migrations"):
+        logging.info("Applying migrations...")
+        upgrade()
+    else:
+        logging.warning("Migrations folder not found! Run 'flask db init' locally and push to GitHub.")
+
 
 # Keeps connections open but removes sessions after each request
 # to prevent memory buildup

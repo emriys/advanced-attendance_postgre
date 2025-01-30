@@ -3,7 +3,7 @@
 # *.sqlite3
 
 # Ignore migration files
-migrations/
+# migrations/
 
 reset_db.py
 
