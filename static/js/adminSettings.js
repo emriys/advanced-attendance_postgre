@@ -2,8 +2,8 @@ window.onload = function() {
     document.querySelectorAll('input').forEach(input => input.value = "");
 };
 document.addEventListener("DOMContentLoaded", function () {
-    const socket = io(
-    // const socket = io('https://areyoupresent.vercel.app',
+    // const socket = io(
+    const socket = io('https://areyoupresent.vercel.app',
     {
         transports: ["websocket"] // Force WebSockets instead of polling
     });
