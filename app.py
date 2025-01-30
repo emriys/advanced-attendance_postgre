@@ -12,7 +12,7 @@ from initializeDatabase import initialize_admin_settings
 from flask import make_response
 from routes import routes
 from flask_cors import CORS
-from extensions import socketio
+from extensions import socketio, logging
 
 
 # Setup Flask app
@@ -44,7 +44,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 # db = SQLAlchemy(app, session_options={"autocommit": False, "autoflush": False})
 
-print("Database URI:", os.getenv('SQLALCHEMY_DATABASE_URI'))
+logging.info("Database URI:", os.getenv('SQLALCHEMY_DATABASE_URI'))
 
 # Initialize SQLAlchemy and Migrate
 db.init_app(app)
@@ -55,10 +55,6 @@ with app.app_context():
     db.create_all()  # Create tables if they don't exist
     initialize_admin_settings()  # Initialize AdminSettings
     upgrade() # This applies migrations automatically
-    
-#Enable WebsSckets before importing routes
-# socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
-# import routes
 
 # Keeps connections open but removes sessions after each request
 # to prevent memory buildup

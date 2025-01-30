@@ -8,7 +8,6 @@ from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from models import *
 from blueprints import forms
-from blueprints.forms import *
 import csv
 from io import BytesIO
 from fpdf import FPDF
@@ -24,7 +23,7 @@ from reportlab.lib.units import inch
 from sqlalchemy import or_
 from werkzeug.security import check_password_hash
 from functools import wraps
-from extensions import socketio
+from extensions import socketio, logging
 
 # Create a blueprint
 routes = Blueprint('routes', __name__)
@@ -43,11 +42,11 @@ def admin_required(f):
 
 @socketio.on("connect")
 def handle_connect():
-    print("Admin connected")
+    logging.info("Admin connected")
     
 @socketio.on('disconnect')
 def handle_disconnect():
-    print("Admin Disconnected.")
+    logging.info("Admin Disconnected.")
 
 # For LateLog updates on Admin Dashboard
 @socketio.on('update_latelog')
@@ -64,9 +63,8 @@ def send_latelog_updates():
         }
         for log in logs
     ]
-    print(pending_requests)
+    # print(pending_requests)
     socketio.emit('late_log_update', pending_requests)
-    print("sent")
 
 def new_attendance_record():
     send_latelog_updates()
@@ -86,6 +84,7 @@ def check_payment_status(statecode):
         latecomer = LateLog.query.filter_by(state_code=statecode).first()
 
         if latecomer:
+            # print(latecomer.status)
             socketio.emit('payment_status_update', {'status': latecomer.status})  # Send status update
         else:
             emit("payment_status_update", {"error": "Statecode not found"}, broadcast=True)
@@ -102,7 +101,7 @@ def approve_payment(new_status):
 def fetch_admin_settings():
     """Send updated admin settings to connected clients."""
     settings = getSettings()
-    print(settings)
+    # print(settings)
     socketio.emit('admin_settings_update', settings) # Emit the updated settings to all clients
 
 def update_admin_settings(new_settings):
@@ -134,6 +133,7 @@ def history():
 
 @routes.route('/register', methods=['GET','POST'])
 def register():
+    from blueprints.forms import MemberRegisterForm 
     form = MemberRegisterForm()
     if form.validate_on_submit():
         user = Users.query.filter_by(state_code=form.state_code.data.upper()).first()
@@ -162,6 +162,7 @@ def signin():
     # Sign in clicked 
     # colllect details 
     # check if user registered 
+    from blueprints.forms import SigninForm
     form = SigninForm()
     
     if request.method=="POST":
@@ -894,7 +895,8 @@ def get_attendance_data(meeting_date):
 def getSettings():
     # Get Admin Settings
     settings = AdminSettings.query.first()
-    
+    if not settings:
+        return {}  # Return empty dict if no settings exist
     settings_data = {
         "lateness_fine": settings.lateness_fine,
         "monthly_due": settings.monthly_due,

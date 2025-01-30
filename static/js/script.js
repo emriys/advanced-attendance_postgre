@@ -1,5 +1,6 @@
 window.onload = function() {
     document.querySelectorAll('input:not([type="submit"])').forEach(input => input.value = "");
+    document.querySelectorAll('select').forEach(input => input.value = "");
 };
 document.addEventListener("DOMContentLoaded", () => {
     // Get the form and its elements

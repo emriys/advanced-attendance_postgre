@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import AdminSettings, db, Users
 from extensions import socketio
-from routes import getSettings
+from blueprints.utils import getSettings
 from datetime import datetime
 import bcrypt
 from flask_wtf import FlaskForm
