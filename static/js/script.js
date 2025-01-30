@@ -11,7 +11,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const formData = new FormData(form);
 
-        // Proceed with form submission
+        // if (form.id == "signin") {
+        //     let latitude = null;
+        //     let longitude = null;
+        //     let accuracy = null;
+        //     let final_fingerprint = null;
+        //     let final_Ip = null;
+
+        //     // Complete function call before moving on
+        //     const getDetails = await sendFingerprintToServer();
+        //     if (getDetails){
+        //         console.log("Moving On!!");
+        //         formData.append("deviceId", final_fingerprint);
+        //         formData.append("Ip", final_Ip);
+        //     } else {
+        //         return errorMsg("Device validation Failed!");
+        //     }
+            
+        // }
+
+        
+
+        //---------- Proceed with form submission ----------//
         try {
             const response = await fetch(form.action, {
             method: 'POST',

@@ -85,6 +85,7 @@ class SigninForm(FlaskForm):
                                 )
                             ])
         deviceId = StringField('deviceId')
+        Ip = StringField('Ip')
         
         submit = SubmitField('Sign-In')
 

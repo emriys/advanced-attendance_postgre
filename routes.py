@@ -182,6 +182,7 @@ def signin():
             last_name = form.last_name.data.upper() # Last name
             statecode = form.state_code.data.upper()
             device_id = form.deviceId.data
+            ip_address = form.Ip.data
             
             confirm_reg = check_user_reg_exists(statecode=statecode, last_name=last_name)
             if not confirm_reg :

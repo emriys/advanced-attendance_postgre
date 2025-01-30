@@ -1,4 +1,5 @@
-const socket = io("http://127.0.0.1:5000",
+// const socket = io("http://127.0.0.1:5000",
+const socket = io('https://areyoupresent.vercel.app',
     {
         transports: ["websocket"] // Force WebSockets instead of polling
     }); // Connect to WebSocket server
