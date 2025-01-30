@@ -1,24 +1,24 @@
-window.onload = function() {
+window.onload = function () {
     document.querySelectorAll('input').forEach(input => input.value = "");
     document.querySelectorAll('select').forEach(input => input.value = "");
 };
 document.addEventListener("DOMContentLoaded", () => {
     // const socket = io(
-    const socket = io('https://areyoupresent.vercel.app',
-    {
-        transports: ["websocket"] // Force WebSockets instead of polling
-    });
-    //const socket = io(); // Connect to WebSocket server
-    // WebSockets to reload table in realtime
-    socket.on("connect", () => {
-        //console.log("Connected to WebSocket for Admin Dashboard.");
-        socket.emit('update_latelog')
-    });
-    socket.on("late_log_update", (data) => {
-        //console.log("Received attendance update:", data);
-        reloadTable(data);
-    });
-    
+    // // const socket = io('https://areyoupresent.vercel.app',
+    // {
+    //     transports: ["websocket"] // Force WebSockets instead of polling
+    // });
+    // //const socket = io(); // Connect to WebSocket server
+    // // WebSockets to reload table in realtime
+    // socket.on("connect", () => {
+    //     //console.log("Connected to WebSocket for Admin Dashboard.");
+    //     socket.emit('update_latelog')
+    // });
+    // socket.on("late_log_update", (data) => {
+    //     //console.log("Received attendance update:", data);
+    //     reloadTable(data);
+    // });
+
     // Get the form and its elements
     const form = document.querySelector(".form");
     const stateCodeInput = document.getElementById('stateCodeInput');
@@ -28,6 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const newStatusInput = document.getElementById('status');
     const msgArea = document.querySelector(".msg-area");
     const tableBody = document.querySelector('.table tbody');
+    let retryCount = 0; // Initialize retry counter
+    const maxRetries = 5; // Maximum number of retries
 
     // Add an event listener for the form submission
     form.addEventListener("submit", (event) => {
@@ -76,19 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     newStatusInput.value = "";
                     //reloadTable(); // Refresh Requests Table
                 }
-
-                /*else if (!data.success) {
-                    message = data.message;
-                    errorMsg(message);
-                    amountInput.value = "";
-                    newStatusInput.value = "";
-                    console.log("Fail:", data);
-                }*/
-
-                /*else {
-                    message = data.message;
-                    pendingMsg(message);
-                }*/
             })
             .catch((error) => {
                 // Display any fetch errors
@@ -108,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Get the statecode value
         const stateCode = stateCodeInput.value;
 
-        if(!stateCode) {
+        if (!stateCode) {
             return errorMsg("Please enter a statecode");
         }
 
@@ -144,36 +133,75 @@ document.addEventListener("DOMContentLoaded", () => {
     });//, { once: true }); // Ensure the click event fires only once
 
     // Function to fetch attendance logs
-    const reloadTable = (data) => {
-        //console.log("Updating table with new data:", data); // Debugging
+    const reloadTable = () => {
         // Refresh Requests Table after a delay to allow server to process data.
-        // Clear the existing table rows
-        tableBody.innerHTML = "";
+        setTimeout(() => {
+            //console.log("Refreshing the Requests Table....");
+            // Construct the fetch URL
+            const url = dashUrl;
 
-        // Populate the table with the fetched data
-        if (data.length > 0) {
-            data.forEach((log, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                <td>${index + 1}</td> <!-- Serial Number -->
-                <td>${log.transaction_date}</td>
-                <td>${log.state_code}</td>
-                <td>${log.request_type}</td>
-                <td>${log.amount}</td>
-                <td>${log.status}</td>
-            `;
-                tableBody.appendChild(row);
-            });
-        } else {
-            // Add a row indicating no records found
-            const row = document.createElement('tr');
-            row.innerHTML = `
-            <td colspan="6" class="text-center">No late sign-in requests found for
-                                    today.</td>
-        `;
-            tableBody.appendChild(row);
-        }
+            // Fetch attendance logs from the server
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error("Failed to fetch requests: Server returned an unexpected response.");
+                })
+                .then(data => {
+                    // Clear the existing table rows
+                    tableBody.innerHTML = "";
+
+                    // Populate the table with the fetched data
+                    if (data.length > 0) {
+                        data.forEach((log, index) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                            <td>${index + 1}</td> <!-- Serial Number -->
+                            <td>${log.transaction_date}</td>
+                            <td>${log.state_code}</td>
+                            <td>${log.request_type}</td>
+                            <td>${log.amount}</td>
+                            <td>${log.status}</td>
+                            <td>${log.log_time}</td>
+                        `;
+                            tableBody.appendChild(row);
+                        });
+                    } else {
+                        // Add a row indicating no records found
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                        <td colspan="7" class="text-center">No late sign-in requests found for
+                                                today.</td>
+                    `;
+                        tableBody.appendChild(row);
+                    }
+                    retryCount = 0; //Reset retry counter
+                })
+                .catch(error => {
+                    //console.error(error);
+                    alert("Server Not Responding. Please try again.");
+                    retryCount++; // Increment retry counter
+                    return
+                });
+        }, 5000);
+
     };
+
+    async function fetchData() {
+        if (retryCount >= maxRetries) {
+            console.warn("Max retries reached. Stopping further attempts.");
+            return; // Stop trying if max retries is reached
+        }
+        reloadTable();
+        setTimeout(fetchData, 30000); // Call itself after a delay
+    };  // Check every 30 seconds
+    fetchData();
+
 });
 
 // Feedback Prompts

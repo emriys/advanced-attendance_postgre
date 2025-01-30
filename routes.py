@@ -1,6 +1,6 @@
 from flask import Flask,request,Response,render_template,session,redirect,url_for,jsonify,send_file,flash,Blueprint
 from flask_session import Session
-from flask_socketio import emit, send
+from flask_socketio import SocketIO, emit, send
 import pandas as pd
 from datetime import datetime,time,timedelta
 from flask_sqlalchemy import SQLAlchemy
@@ -37,87 +37,6 @@ def admin_required(f):
             return redirect(url_for('routes.admin'))
         return f(*args, **kwargs)
     return decorated_function
-
-# ---------------- WebSockets ---------------- #
-
-@socketio.on("connect")
-def handle_connect():
-    logging.info("Admin connected")
-    
-@socketio.on('disconnect')
-def handle_disconnect():
-    logging.info("Admin Disconnected.")
-
-# For LateLog updates on Admin Dashboard
-@socketio.on('update_latelog')
-def send_latelog_updates():
-    # """Emit live attendance logs to connected clients."""
-    logs = LateLog.query.all()
-    pending_requests = [
-        {
-            'transaction_date': log.transaction_date.strftime('%Y-%m-%d'),
-            'state_code': log.state_code,
-            'request_type': log.request_type,
-            'amount': log.amount,
-            'status': log.status
-        }
-        for log in logs
-    ]
-    # print(pending_requests)
-    socketio.emit('late_log_update', pending_requests)
-
-def new_attendance_record():
-    send_latelog_updates()
-
-
-# For Payment status on paymentpage
-@socketio.on("check_payment_status")
-def check_payment_status(statecode):
-    statecode = statecode.upper()
-    
-    # Validate 'statecode' input
-    if not statecode:
-        emit("payment_status_update", {"error": "Statecode is required"}, broadcast=True)
-        # return jsonify({"error": "Statecode is required"}), 400
-
-    try:
-        latecomer = LateLog.query.filter_by(state_code=statecode).first()
-
-        if latecomer:
-            # print(latecomer.status)
-            socketio.emit('payment_status_update', {'status': latecomer.status})  # Send status update
-        else:
-            emit("payment_status_update", {"error": "Statecode not found"}, broadcast=True)
-    except Exception as e:
-        emit("payment_status_update", {"error": str(e)}, broadcast=True)
-    finally:
-        db.session.close()
-
-def approve_payment(new_status):
-    socketio.emit('payment_status_update', {'status': new_status})  # Send new status update
-
-# For settings preview on Admin Settings page
-@socketio.on('fetch_admin_settings')
-def fetch_admin_settings():
-    """Send updated admin settings to connected clients."""
-    settings = getSettings()
-    # print(settings)
-    socketio.emit('admin_settings_update', settings) # Emit the updated settings to all clients
-
-def update_admin_settings(new_settings):
-    """Save settings and notify clients."""
-    admin_settings = AdminSettings.query.first()
-    if not admin_settings:
-        admin_settings = AdminSettings()
-        db.session.add(admin_settings)
-
-    for key, value in new_settings.items():
-        setattr(admin_settings, key, value)
-
-    db.session.commit()
-    fetch_admin_settings()  # Emit the updated settings
-
-
 
 # ---------------- ROUTES ---------------- #
 
@@ -209,12 +128,11 @@ def signin():
                                 state_code=statecode,
                                 request_type="Late Sign-In",
                                 amount=amount,
-                                status="Pending"
+                                status="Pending",
+                                log_time = datetime.now().time()
                             )
                             db.session.add(new_entry)
                             db.session.commit()
-                            # Notify WebSocket clients about the update
-                            send_latelog_updates()
                         # Pass deviceId to the payment page
                         return redirect(url_for('routes.payment', statecode=statecode, device_id=device_id))
                         # return payment(statecode,device_id)
@@ -224,10 +142,6 @@ def signin():
                         confirm_attendance = record_attendance(confirm_reg)
             
                         if confirm_attendance:
-                            # Log device in the database
-                            # new_device = DeviceLog(device_id=device_id, timestamp=datetime.utcnow())
-                            # db.session.add(new_device)
-                            # db.session.commit()
                             return render_template("thankyouregister.html")
                         else:
                             return """<h1>Server Error!</h1> <h4><p>Failed to log attendance</p></h4>""", 500
@@ -295,11 +209,32 @@ def admindash():
     if 'admin_logged_in' not in session:
         flash("Session expired. Please log in again.", "warning")
         return redirect(url_for('routes.admin'))
+    
+    # Check if the request is an AJAX request by inspecting headers
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    if is_ajax:
+        # Query the late logs for the latecomer requests and respond to the AJAX request
+        logs = LateLog.query.all()
+        pending_requests = [
+            {
+                'transaction_date': log.transaction_date.strftime('%Y-%m-%d'),
+                'state_code': log.state_code,
+                'request_type': log.request_type,
+                'amount': log.amount,
+                'status': log.status,
+                'log_time': log.log_time.strftime('%H:%M:%S')
+            }
+            for log in logs
+        ]
 
-    # Send existing late logs when the admin dashboard loads
-    send_latelog_updates()
+        return jsonify(pending_requests)
+    
+    # If the request is not an AJAX request
+    # Get all pending latecomer requests from the LateLog table
+    pending_requests = LateLog.query.all()
 
-    return render_template('admindashboard.html')
+    return render_template('admindashboard.html', pending_requests=pending_requests)
 
 @routes.route('/admin/settings', methods=['GET', 'POST'])
 @admin_required
@@ -308,6 +243,13 @@ def admin_settings():
         flash("Session expired. Please log in again.", "warning")
         return redirect(url_for('routes.admin'))
 
+    # Get Admin Settings from the database and update webpage
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    if is_ajax:
+        settings = getSettings()
+        return jsonify(settings)
+    
     return render_template ("adminsettings.html")
 
 @routes.route('/admin/attendance_logs', methods=['GET', 'POST'])
@@ -537,8 +479,6 @@ def update_latecomer():
             latecomer.status = status
             latecomer.amount = 0
             db.session.commit()
-            approve_payment(latecomer.status)
-            #socketio.emit('payment_status_update', {'status': latecomer.status})  # Send status update
             return jsonify({'success': True, 'message': f'Approved'}), 200
         elif status == "Pending" :
             return jsonify({'success': True, 'message': f'Still Pending'}), 200
@@ -811,7 +751,6 @@ def record_attendance(user):
     new_attendance = AttendanceLog(
         user_id=user.id,  # Assuming `user` is an instance of Users
         sign_in_time=datetime.now().time(),
-        # ip_address=request.remote_addr,
         meeting_date=datetime.now().date()
     )
     db.session.add(new_attendance)
@@ -823,7 +762,7 @@ def record_attendance(user):
 def update_latecomer_status(stateCode):
     # Find the late log for the state code
     late_log = LateLog.query.filter_by(state_code=stateCode).first()
-    print(late_log)
+    # print(late_log)
     
     if late_log:
         late_log.amount = 0
@@ -854,8 +793,6 @@ def pop_latecomer(statecode):
     Latecomer = LateLog.query.filter_by(state_code=statecode, status="Approved").first()
     db.session.delete(Latecomer)
     db.session.commit()
-    # Notify WebSocket clients about the update
-    send_latelog_updates()
 
 def get_attendance_data(meeting_date):
     # Get attendance data for one particular day

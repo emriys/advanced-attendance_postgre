@@ -1,4 +1,4 @@
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 import logging
 
 # Initialize WebSocket without attaching it to `app` yet

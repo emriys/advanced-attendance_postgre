@@ -113,9 +113,6 @@ def change_login():
         
         db.session.commit()
         
-        # Emit WebSocket event to update settings page
-        socketio.emit('admin_settings_update', getSettings())
-        
         # Process feedback
         return jsonify(success=True, message="Login details updated successfully!")
     
@@ -154,9 +151,6 @@ def attend_time_update():
         settings.late_arrival_start = late_start
         settings.late_arrival_end = late_end
         db.session.commit()
-        
-        # Emit WebSocket event to update settings page
-        socketio.emit('admin_settings_update', getSettings())
     
         # Process feedback
         return jsonify(success=True, message="Time updated successfully!")
@@ -176,9 +170,6 @@ def late_fee_update():
         settings.lateness_fine = late_fee
         db.session.commit()
         
-        # Emit WebSocket event to update settings page
-        socketio.emit('admin_settings_update', getSettings())
-        
         # Process feedback
         return jsonify(success=True, message="Fee updated successfully!")
     
@@ -196,9 +187,6 @@ def due_amount_update():
         settings = AdminSettings.query.first()
         settings.monthly_due = due_fee
         db.session.commit()
-        
-        # Emit WebSocket event to update settings page
-        socketio.emit('admin_settings_update', getSettings())
         
         # Process feedback
         return jsonify(success=True, message="Due amount updated successfully!")
@@ -223,9 +211,6 @@ def account_details():
         settings.bank_name = bank_name
         db.session.commit()
         
-        # Emit WebSocket event to update settings page
-        socketio.emit('admin_settings_update', getSettings())
-        
         # Process feedback
         return jsonify(success=True, message="Account Details updated successfully!")
     
@@ -245,9 +230,6 @@ def meeting_day_update():
         settings.meeting_day = meeting_day
         db.session.commit()
         
-        # Emit WebSocket event to update settings page
-        socketio.emit('admin_settings_update', getSettings())
-        
         # Process feedback
         return jsonify(success=True, message="Meeting Day updated successfully!")
     
@@ -266,9 +248,6 @@ def allow_attendance():
         settings = AdminSettings.query.first()
         settings.allow_attendance = allow_attendance
         db.session.commit()
-        
-        # Emit WebSocket event to update settings page
-        socketio.emit('admin_settings_update', getSettings())
         
         # Process feedback
         return jsonify(success=True, message=f"Attendance Collection {allow_attendance}!")

@@ -45,6 +45,7 @@ class LateLog(db.Model):
     request_type = db.Column(db.String(20), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(20), nullable=False)
+    log_time = db.Column(db.Time, nullable=False, default=datetime.now().time)
     
 class AdminSettings(db.Model):
     __tablename__ = 'settings'

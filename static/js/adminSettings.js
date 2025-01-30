@@ -1,39 +1,54 @@
-window.onload = function() {
+window.onload = function () {
     document.querySelectorAll('input').forEach(input => input.value = "");
+    document.querySelectorAll('select').forEach(input => input.value = "");
 };
-document.addEventListener("DOMContentLoaded", function () {
-    // const socket = io(
-    const socket = io('https://areyoupresent.vercel.app',
-    {
-        transports: ["websocket"] // Force WebSockets instead of polling
-    });
 
-    socket.on("connect", () => {
-        //console.log("Connected to WebSocket for Admin Settings.");
-        socket.emit("fetch_admin_settings");  // Request latest settings on connect
-    });
+// Fetch the previously set parameters from server and display as placeholder
+function fetchData() {
 
-    socket.on("admin_settings_update", (data) => {
-        //console.log("Received updated admin settings:", data);
-        updateSettings(data);
-    });
+    const url = '/admin/settings'
 
-    function updateSettings(data) {
-        if (data) {
-            document.getElementById('late-fee-id').placeholder = data.lateness_fine || "N/A";
-            document.getElementById('due-id').placeholder = data.monthly_due || "N/A";
-            document.getElementById('acct-num-id').placeholder = data.account_number || "N/A";
-            document.getElementById('acct-name-id').placeholder = data.account_name || "N/A";
-            document.getElementById('bank-name-id').placeholder = data.bank_name || "N/A";
-            document.getElementById('username').placeholder = data.admin_username || "N/A";
-            document.getElementById('meeting_day').innerHTML = data.meeting_day || "N/A"
-            document.getElementById('allow_attendance').innerHTML = data.allow_attendance || "N/A"
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
         }
-        else {
-            alert("NO DATA received from Server!!")
-        }
-    }
-});
+    })
+        .then(response => {
+            if (response.ok) {
+                //console.log(response);
+                return response.json();
+            }
+            throw new Error('Failed to fetch current settings: Server Error');
+        })
+        .then(data => {
+            if (data) {
+
+                document.getElementById('late-fee-id').placeholder = data.lateness_fine || "N/A";  //data.balance
+                document.getElementById('due-id').placeholder = data.monthly_due || "N/A";
+                document.getElementById('acct-num-id').placeholder = data.account_number || "N/A";
+                document.getElementById('acct-name-id').placeholder = data.account_name || "N/A";
+                document.getElementById('bank-name-id').placeholder = data.bank_name || "N/A";
+                document.getElementById('username').placeholder = data.admin_username || "N/A";
+                document.getElementById('meeting_day').innerHTML = data.meeting_day || "N/A"
+                document.getElementById('allow_attendance').innerHTML = data.allow_attendance || "N/A"
+            }
+            else {
+                alert("NO DATA!!")
+                //console.log("NO DATA!!")
+            }
+        })
+        .catch(error => {
+            //console.log(error);
+            //alert("Failed to get settings data.");
+            return
+        });
+    console.log("Waiting");
+    setTimeout(fetchData, 60000); // Call itself after a delay of 60 seconds
+    console.log("Called");
+};
+fetchData();
+console.log("External");
+
 
 // Attach event listeners to all forms with a common class
 document.querySelectorAll('.ajax-form').forEach((form) => {
@@ -86,6 +101,7 @@ document.querySelectorAll('.ajax-form').forEach((form) => {
                     // Hide message after a delay
                     setTimeout(() => {
                         targetDiv.innerHTML = "";
+                        fetchData();
                     }, 3000);
                 })
                 .catch((error) => {

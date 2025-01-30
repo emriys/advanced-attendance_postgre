@@ -92,6 +92,7 @@
                                             <th>Request Type</th>
                                             <th>Amount</th>
                                             <th>Status</th>
+                                            <th>Time</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -104,11 +105,12 @@
                                             <td>{{request.request_type}}</td>
                                             <td>{{request.amount}}</td>
                                             <td>{{request.status}}</td>
+                                            <td>{{request.log_time}}</td>
                                         </tr>
                                         {% endfor %}
                                         {% else %}
                                         <tr>
-                                            <td colspan="6" class="text-center">No late sign-in requests found for
+                                            <td colspan="7" class="text-center">No late sign-in requests found for
                                                 today.
                                             </td>
                                         </tr>
@@ -123,6 +125,7 @@
         </div>
     </div>
 
+    <script>dashUrl=`{{url_for('routes.admindash')}}`</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='js/adminDashboard.js') }}"></script>
    
