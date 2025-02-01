@@ -42,12 +42,10 @@ function fetchData() {
             //alert("Failed to get settings data.");
             return
         });
-    console.log("Waiting");
     setTimeout(fetchData, 60000); // Call itself after a delay of 60 seconds
-    console.log("Called");
 };
 fetchData();
-console.log("External");
+
 
 
 // Attach event listeners to all forms with a common class

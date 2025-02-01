@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Attendance History - NIESAT</title>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" as="style"
+		onload="this.onload=null;this.rel='stylesheet'"
+		integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/historystyle.css')}}">
+</head>
+
+<body>
+	<header>
+		<img src="{{url_for('static', filename='images/LOGO.jpg')}}" alt="NIESAT Logo" width="80" height="80" />
+		<h2>View Attendance History</h2>
+	</header>
+	<main>
+		<div class="rows">
+			<div class="container-fluid">
+				<div class="row mt-4">
+					<!-- Form field -->
+					<div class="col-md-4">
+						<div class="card-body">
+							<form id="form" class="form" action="{{ url_for('routes.user_logs') }}" method="POST">
+								<h2>Query</h2> <br>
+
+								<div class="msg-area"></div>
+
+								{{ form.hidden_tag() }} <!-- CSRF Token -->
+
+								<label>State Code:</label>
+								{{ form.statecode(size=10,pattern="^[Kk][Ww]/\d{2}[a-cA-C]/\d{4}$",
+								title="Must contain correct and complete state code: KW/XX/XXXX") }}<br>
+
+								<label>Start Date:</label>
+								{{ form.start_date(id="startDate",onchange="document.getElementById('endDate').min
+								= this.value") }}<br>
+
+								<label>End Date:</label>
+								{{ form.end_date(id="endDate") }}<br>
+
+								<button class="btn btn-primary" type="submit">Submit</button>
+								<p>Haven't signed in today? <a href="{{ url_for('routes.signin') }}">Mark
+										Attendance</a></p>
+							</form>
+						</div>
+					</div>
+
+
+					<!-- Table Field -->
+					<div class="col-md-8">
+						<div class="card">
+							<div class="card-body">
+								<h5 class="card-title">Your History Log</h5>
+								<div class="table-responsive">
+									<table class="table_reform table table-striped mt-4">
+										<div>
+											<p class="card-title">NAME: <span id="user_name"></span></p>
+											<p class="card-title">STATE CODE: <span id="user_statecode"></span></p>
+										</div>
+										<thead>
+											<tr>
+												<th>S/N</th> <!-- Serial Number Column -->
+												<th>Meeting Date</th>
+												<th>Status</th>
+											</tr>
+										</thead>
+										<tbody>
+										</tbody>
+									</table>
+									<!-- Overlay with loading spinner and message -->
+									<div id="overlay" class="overlay">
+										<div id="loadingSpinner" class="spinner"></div>
+										<div id="messagePopup" class="message-popup"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</main>
+	<script src="{{ url_for('static', filename='js/userHistory.js') }}"></script>
+</body>
+
+</html>

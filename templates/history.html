@@ -16,7 +16,7 @@
 		<h2>View Attendance History</h2>
 	</header>
 	<main>
-		<form action="" method="POST">
+		<form action="{{ url_for('routes.check') }}" method="POST">
 			<h2>Select date range</h2> <br><br>
 			<label for="username">StateCode <span class="required">*</span></label>
 			<input type="text" id="username" name="statecode" pattern="[Kk][Ww]/\d{2}[a-zA-Z]/\d{4}" title="Must contain correct and complete statecode: KW/XXX/XXXX" required>

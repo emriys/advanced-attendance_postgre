@@ -23,7 +23,7 @@ from reportlab.lib.units import inch
 from sqlalchemy import or_
 from werkzeug.security import check_password_hash
 from functools import wraps
-from extensions import socketio, logging
+from extensions import socketio, logging, pytz, nigeria_tz
 
 # Create a blueprint
 routes = Blueprint('routes', __name__)
@@ -115,7 +115,7 @@ def signin():
                     
                 else:
                     # If late, handle late sign-in
-                    current_time = datetime.now().time()
+                    current_time = get_local_time()
                     
                     if late_start <= current_time <= late_end:
                         amount = settings.lateness_fine
@@ -129,7 +129,7 @@ def signin():
                                 request_type="Late Sign-In",
                                 amount=amount,
                                 status="Pending",
-                                log_time = datetime.now().time()
+                                log_time = current_time
                             )
                             db.session.add(new_entry)
                             db.session.commit()
@@ -139,6 +139,7 @@ def signin():
                     
                     elif early_start <= current_time < late_start:
                         # Regular sign-in (early sign-in)
+                        # Pass user unique id to record attendance function
                         confirm_attendance = record_attendance(confirm_reg)
             
                         if confirm_attendance:
@@ -310,7 +311,7 @@ def clearLatelog():
     
     # action = request.args.get('statecodeSelect')
     if request.method == "POST":
-        statecode = request.form["statecode"]
+        statecode = request.form["statecode"].upper()
         # print(statecode)
         if statecode == "All":
             try:
@@ -423,21 +424,6 @@ def clearDevicelog():
         # print(f"An error occurred: {e}")
                 
     return """<html>Device Log Cleared</html>"""
-        
-    #     elif statecode :
-            # try:
-            #     # Clear specific state code entries
-            #     deleted_rows = LateLog.query.filter_by(state_code=statecode).delete()
-            #     db.session.commit()
-
-            #     if deleted_rows > 0:
-            #         return jsonify({"message": f"LateLogs for state code {statecode} cleared successfully."}), 200
-            #     else:
-            #         return jsonify({"message": f"No records found for state code {statecode}."}), 200
-            # except Exception as e:
-            #     db.session.rollback()  # Roll back in case of an error
-            #     print(f"An error occurred: {e}")
-            #     return jsonify(message="Invalid request."), 400
 
     # return render_template("clearLateLog.html")
 
@@ -582,12 +568,9 @@ def export_attendance():
     attendance_data = collect_attendance_data_for_range(meeting_date, meeting_date2, meeting_day)
     # Sort data for easier readability
     attendance_data = sort_by_batch_year_and_state_code(attendance_data)
-    # print('Collect')
-    # print(attendance_data)
+    
     date_range = get_date_range(meeting_date, meeting_date2, meeting_day)
     data = preprocess_attendance_data_for_range(attendance_data,date_range)
-    # print("Data")
-    # print(data)
         
     if meeting_date != meeting_date2:
         meeting_date=f"{meeting_date}_to_{meeting_date2}"
@@ -613,11 +596,53 @@ def export_attendance():
         download_name=f"NIESAT_attendance_{meeting_date}.{extension}"
     )
 
-@routes.route('/user_attendance_log', methods=['POST'])
+@routes.route('/user_attendance_log', methods=['GET','POST'])
 def user_logs():
-    user_logs = user.attendance_logs  # `user` is an instance of Users
-    for log in user_logs:
-        print(log.meeting_date, log.sign_in_time, log.ip_address)
+    from blueprints.forms import AttendanceForm
+    form = AttendanceForm()
+
+    if request.method == "POST" and form.validate_on_submit():
+        statecode = form.statecode.data.upper()
+        start_date = form.start_date.data.strftime('%Y-%m-%d')
+        end_date = form.end_date.data.strftime('%Y-%m-%d')
+                
+        ###########
+        # Get the set meeting day from AdminSettings then collect attendance
+        settings = AdminSettings.query.first()
+        meeting_day = settings.meeting_day
+        
+        # Generate the date range for everyday
+        date_range = get_date_range(start_date, end_date, meeting_day)
+        
+        # Loop through each date and fetch attendance logs
+        all_attendance_data = []
+        for date in date_range:
+            logs = AttendanceLog.query.join(Users).add_columns(
+                Users.first_name, Users.middle_name, Users.last_name,
+                Users.state_code, AttendanceLog.meeting_date
+            ).filter(AttendanceLog.meeting_date == date, Users.state_code == statecode).all()
+            
+            # Append logs to attendance data
+            for log in logs:
+                try:
+                    all_attendance_data.append({
+                        "first_name": log.first_name,
+                        "middle_name": log.middle_name or "",  # Handle missing middle name
+                        "last_name": log.last_name,
+                        "state_code": log.state_code,
+                        "meeting_date": log.meeting_date.strftime("%Y-%m-%d")
+                    })
+                except AttributeError as e:
+                    print(f"Error processing log: {log}. Error: {e}")
+        data_request = preprocess_attendance_data_for_range(all_attendance_data,date_range)
+        ###########
+        
+        if len(data_request) <= 0:
+            return jsonify({"success": False, "message": "No attendance records found for this date range."}), 200
+
+        return jsonify(data_request), 200
+
+    return render_template("userHistory.html", form=form)
 
 @routes.route('/thankyou')
 def thankyou():
@@ -676,7 +701,6 @@ def check_user_reg_exists(user_data=None,statecode=None,last_name=None, **kwargs
 
         except IntegrityError:
             db.session.rollback()  # Rollback the transaction
-            # print("IntegrityError: User might already exist. Querying again...")
             # Re-query the user in case of integrity error, 
             # check again using case-insensitive format
             return Users.query.filter(
@@ -719,7 +743,6 @@ def check_user_reg_exists(user_data=None,statecode=None,last_name=None, **kwargs
 
         except IntegrityError:
             db.session.rollback()  # Rollback the transaction
-            # print("IntegrityError: User might already exist. Querying again...")
             # Re-query the user in case of integrity error, 
             # check again using case-insensitive format
             return Users.query.filter(
@@ -750,7 +773,7 @@ def record_attendance(user):
     # Record user attendance for the day
     new_attendance = AttendanceLog(
         user_id=user.id,  # Assuming `user` is an instance of Users
-        sign_in_time=datetime.now().time(),
+        sign_in_time=get_local_time(),
         meeting_date=datetime.now().date()
     )
     db.session.add(new_attendance)
@@ -828,6 +851,9 @@ def get_attendance_data(meeting_date):
     
     return attendance_data
 
+def get_local_time():
+    # Convert from UTC to Nigeria time UTC+1
+    return datetime.now(pytz.utc).astimezone(nigeria_tz).time()
 
 
 def getSettings():
@@ -1038,19 +1064,32 @@ def get_date_range(date1=None,date2=None,meeting_day=None, **kwargs):
 def preprocess_attendance_data_for_range(attendance_data, date_range):
     # Dictionary to store users and their attendance
     users = {}
-    for record in attendance_data:
-        user_key = f"{record['first_name']} {record['middle_name']} {record['last_name']}"
-        if user_key not in users:
-            users[user_key] = {
-                # "S/N": serial_number,
-                "NAME": user_key,
-                "STATE CODE": record["state_code"],
-                "GENDER": record["gender"],
-                **{date: "A" for date in date_range}  # Default to "A" (Absent)
-            }
-        # Mark present for the specific date
-        users[user_key][record["meeting_date"]] = "P"
+    if "gender" in attendance_data:
+        for record in attendance_data:
+            user_key = f"{record['first_name']} {record['middle_name']} {record['last_name']}"
+            if user_key not in users:
+                users[user_key] = {
+                    "NAME": user_key,
+                    "STATE CODE": record["state_code"],
+                    "GENDER": record["gender"],
+                    **{date: "A" for date in date_range}  # Default to "A" (Absent)
+                }
+            # Mark present for the specific date
+            users[user_key][record["meeting_date"]] = "P"
 
+    # If no "gender" key:value is available in attendance_data
+    else:
+        for record in attendance_data:
+            user_key = f"{record['first_name']} {record['middle_name']} {record['last_name']}"
+            if user_key not in users:
+                users[user_key] = {
+                    "NAME": user_key,
+                    "STATE_CODE": record["state_code"],
+                    **{date: "Absent" for date in date_range}  # Default to "A" (Absent)
+                }
+            # Mark present for the specific date
+            users[user_key][record["meeting_date"]] = "Present"
+    
     # Convert dictionary to list of dictionaries
     return list(users.values())
 

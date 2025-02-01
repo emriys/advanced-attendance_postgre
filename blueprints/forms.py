@@ -89,6 +89,16 @@ class SigninForm(FlaskForm):
         
         submit = SubmitField('Sign-In')
 
+class AttendanceForm(FlaskForm):
+    statecode = StringField("Statecode", validators=[DataRequired(),Length(min=2,max=11),
+                                 Regexp(
+                                     regex=r'^[Kk][Ww]/\d{2}[a-cA-C]/\d{4}$',
+                                     message="State code must follow the format: KW/XX/A/XXXX"
+                                    )])
+    start_date = DateField("Start Date", validators=[DataRequired()])
+    end_date = DateField("End Date", validators=[DataRequired()])
+    submit = SubmitField("Search")
+
 #----------------- ADMIN SETTINGS FORMS --------------------#
 
 @forms_bp.route('/change_login', methods=['GET', 'POST'])
@@ -125,9 +135,6 @@ def attend_time_update():
         early_start = request.form['early_start']
         late_start = request.form['late_start']
         late_end = request.form['late_end']
-        # print(early_start)
-        # print(late_start)
-        # print(late_end)
         
         if not all([early_start, late_start, late_end]):
             return jsonify(success=False, message="Missing a key field!")
@@ -137,9 +144,6 @@ def attend_time_update():
             early_start = datetime.strptime(early_start, "%H:%M").time()
             late_start = datetime.strptime(late_start, "%H:%M").time()
             late_end = datetime.strptime(late_end, "%H:%M").time()
-            # print(early_start)
-            # print(late_start)
-            # print(late_end)
 
         except ValueError as e:
             # print(f"Error parsing time string: {e}")
