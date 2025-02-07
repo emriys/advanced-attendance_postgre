@@ -72,7 +72,7 @@ def register():
         
             confirm = check_user_reg_exists(user_data=user_data)
             if confirm :
-                return jsonify({'success':True,"message":'Registration successful',"redirect":"/signin"})
+                return jsonify({'success':True,"message":'Registration successful',"redirect":"/"})
             else :
                 return jsonify({'success':False,"message":'Server Error: Could not add user'})
         
