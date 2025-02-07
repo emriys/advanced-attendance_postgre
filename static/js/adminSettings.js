@@ -31,6 +31,9 @@ function fetchData() {
                 document.getElementById('username').placeholder = data.admin_username || "N/A";
                 document.getElementById('meeting_day').innerHTML = data.meeting_day || "N/A"
                 document.getElementById('allow_attendance').innerHTML = data.allow_attendance || "N/A"
+                document.getElementById('early_time').innerHTML = data.early_start || "N/A"
+                document.getElementById('late_time').innerHTML = data.late_start || "N/A"
+                document.getElementById('late_time_end').innerHTML = data.late_end || "N/A"
             }
             else {
                 alert("NO DATA!!")
@@ -42,10 +45,9 @@ function fetchData() {
             //alert("Failed to get settings data.");
             return
         });
-    setTimeout(fetchData, 60000); // Call itself after a delay of 60 seconds
+    //setTimeout(fetchData, 60000); // Call itself after a delay of 60 seconds
 };
 fetchData();
-
 
 
 // Attach event listeners to all forms with a common class

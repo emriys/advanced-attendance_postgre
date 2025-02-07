@@ -76,11 +76,16 @@ def register():
         
     return render_template('register.html', title='Register', form=form)
 
-@routes.route('/signin', methods=['GET', 'POST'])
+@routes.route('/admin/signin', methods=['GET', 'POST'])
+@admin_required
 def signin():
     # Sign in clicked 
     # colllect details 
     # check if user registered 
+    if 'admin_logged_in' not in session:
+        flash("Session expired. Please log in again.", "warning")
+        return redirect(url_for('routes.admin'))
+    
     from blueprints.forms import SigninForm
     form = SigninForm()
     
@@ -143,6 +148,7 @@ def signin():
                         confirm_attendance = record_attendance(confirm_reg)
             
                         if confirm_attendance:
+                            return jsonify({'success':True,"message":f'Attendance logged for {statecode}'})
                             return render_template("thankyouregister.html")
                         else:
                             return """<h1>Server Error!</h1> <h4><p>Failed to log attendance</p></h4>""", 500
@@ -313,7 +319,7 @@ def clearLatelog():
     if request.method == "POST":
         statecode = request.form["statecode"].upper()
         # print(statecode)
-        if statecode == "All":
+        if statecode == "ALL":
             try:
                 db.session.query(LateLog).delete()  # Deletes all rows
                 db.session.commit()  # Commit the transaction
@@ -455,7 +461,7 @@ def update_latecomer():
     
     try:
         # Query the LateLog table to find the user
-        latecomer = LateLog.query.filter_by(state_code=statecode, status="Pending").first()
+        latecomer = LateLog.query.filter_by(state_code=statecode, status="Approved").first()
 
         if not latecomer:
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -465,6 +471,21 @@ def update_latecomer():
             latecomer.status = status
             latecomer.amount = 0
             db.session.commit()
+            
+            ############################
+            # Add Late comer to attendance instantly
+            user = Users.query.filter_by(state_code=statecode).first()
+            # Check if user attendance is registered already
+            attendanceStatus = check_user_attendance_exists(statecode)
+            if attendanceStatus != "":
+                return jsonify({'success':False,"message":attendanceStatus})
+            # Add late attendance to database
+            if user:
+                confirm_attendance = record_attendance(user)
+            if confirm_attendance:
+                pop_latecomer(statecode)
+            #############################
+            
             return jsonify({'success': True, 'message': f'Approved'}), 200
         elif status == "Pending" :
             return jsonify({'success': True, 'message': f'Still Pending'}), 200
@@ -869,7 +890,10 @@ def getSettings():
         "bank_name": settings.bank_name,
         "admin_username": settings.admin_username,
         "meeting_day": settings.meeting_day,
-        "allow_attendance": settings.allow_attendance
+        "allow_attendance": settings.allow_attendance,
+        "early_start": settings.early_arrival_start.strftime("%H:%M:%S"),
+        "late_start": settings.late_arrival_start.strftime("%H:%M:%S"),
+        "late_end": settings.late_arrival_end.strftime("%H:%M:%S")
     }
     
     return settings_data
@@ -1064,7 +1088,7 @@ def get_date_range(date1=None,date2=None,meeting_day=None, **kwargs):
 def preprocess_attendance_data_for_range(attendance_data, date_range):
     # Dictionary to store users and their attendance
     users = {}
-    if "gender" in attendance_data:
+    if attendance_data and "gender" in attendance_data[0]:
         for record in attendance_data:
             user_key = f"{record['first_name']} {record['middle_name']} {record['last_name']}"
             if user_key not in users:

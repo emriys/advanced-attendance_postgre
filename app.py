@@ -38,8 +38,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # To disable unnecessary t
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = { 
     "pool_pre_ping": True,      # Ensures broken connections are detected by checking if a connection is alive before using it.
     "pool_recycle": 900,        # Recycles connections every 15 mins to prevent stale connections
-    "pool_size": 10,            # Number of persistent connections in the pool ready to use
-    "max_overflow": 20,         # Additional connections allowed beyond pool_size for when traffic spikes
+    "pool_size": 20,            # Number of persistent connections in the pool ready to use
+    "max_overflow": 30,         # Additional connections allowed beyond pool_size for when traffic spikes
     "pool_timeout": 30          # Wait time, in seconds, for a connection before throwing an error
 }
 # db = SQLAlchemy(app, session_options={"autocommit": False, "autoflush": False})

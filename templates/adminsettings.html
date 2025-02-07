@@ -21,8 +21,16 @@
             <div id="mySidebar" class="sidebar">
                 <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
                 <a href="dashboard">Dashboard</a>
+                <a href="signin">Mark Attendance</a>
                 <a href="attendance_logs">Attendance Logs</a>
                 <a href="settings">Settings</a>
+                <br>
+                <br>
+                <br>
+                <br>
+                <a href="clear_latelog">Clear LateLog</a>
+                <a href="clear-user">Clear User</a>
+                <a href="/logout">Logout</a>
             </div>
         </div>
         <div class="heading">
@@ -45,7 +53,7 @@
                     <div class="msg-area"></div>
 
                     <div class="form-group">
-                        <label class="form-label" for="allow_attendance">Active: </label>
+                        <label class="form-label" for="allow_attendance">Status: </label>
                         <span id="allow_attendance"></span>
                         <select class="form-select" id="allow_attendance" name="allow_attendance" required="">
                             <option value="">Select an option</option>
@@ -65,19 +73,22 @@
                     <div class="msg-area"></div>
 
                     <div class="form-group">
-                        <label class="form-label" for="early_start">Early Arrival Start</label>
+                        <label class="form-label" for="early_start">Early Arrival Start: </label>
+                        <span id="early_time"></span>
                         <input class="form-control" id="early_start" maxlength="5" minlength="1" name="early_start"
                             required="" type="time" value="" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="late_start">Late Arrival Start</label>
+                        <label class="form-label" for="late_start">Late Arrival Start: </label>
+                        <span id="late_time"></span>
                         <input class="form-control" id="late-start" maxlength="5" minlength="1" name="late_start"
                             required="" type="time" name="late-start" value="" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="late_end">Late Arrival End</label>
+                        <label class="form-label" for="late_end">Late Arrival End: </label>
+                        <span id="late_time_end"></span>
                         <input class="form-control" id="late-end" maxlength="5" minlength="1" name="late_end"
                             required="" type="time" name="late-end" value="" required>
                     </div>
