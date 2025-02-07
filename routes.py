@@ -43,7 +43,9 @@ def admin_required(f):
 @routes.route('/')
 @routes.route('/home')
 def index():
-    return render_template("index.html")
+    linkedIn = "https://linkedin.com/in/adbulsalam-bode-okunade-04249220b"
+    email = "bodeokunadeab@gmail.com"
+    return render_template("index.html", linkedIn=linkedIn, email=email)
 
 @routes.route('/history')
 def history():

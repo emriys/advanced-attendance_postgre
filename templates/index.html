@@ -1,31 +1,44 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<title>Welcome to NIESAT</title>
 	<meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet"  type="text/css" href="{{url_for('static', filename='css/indexstyle.css')}}">
-	
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/indexstyle.css')}}">
+
 	<!-- <link rel="stylesheet" type="text/css" href="/static/indexstyle.css"> -->
 </head>
-<body>
+
+<body class="wrapper">
 	<header>
 		<div class="heading">
-			<img src="{{url_for('static', filename='images/LOGO.jpg')}}" alt="NIESAT Logo" width="100" height = "100"/>
-		
-		<h2>Welcome to NIESAT CDS</h2>
-		<h4>Kwara State Chapter</h4>
+			<img src="{{url_for('static', filename='images/LOGO.jpg')}}" alt="NIESAT Logo" width="100" height="100" />
+
+			<h2>Welcome to NIESAT CDS</h2>
+			<h4>Kwara State Chapter</h4>
 		</div>
 	</header>
 	<main>
 		<section>
-			<a href="{{ url_for('routes.register') }}"><button class="button"><h2>Register New Member</h2></button></a>
-			<a href="{{ url_for('routes.user_logs') }}"><button class="button"><h2>View Attendance History</h2></button></a>
-			<a href="{{ url_for('routes.pay_monthly_due') }}"><button class="button"><h2>Pay Monthly Dues</h2></button></a>
+			<a href="{{ url_for('routes.register') }}"><button class="button">
+					<h2>Register New Member</h2>
+				</button></a>
+			<a href="{{ url_for('routes.user_logs') }}"><button class="button">
+					<h2>View Attendance History</h2>
+				</button></a>
+			<a href="{{ url_for('routes.pay_monthly_due') }}"><button class="button">
+					<h2>Pay Monthly Dues</h2>
+				</button></a>
 		</section>
 	</main>
+
+	<footer>
+		Copyright © 2025. Developed by Abdulsalam. Contacts: <a href="{{linkedIn}}" target="_blank">LinkedIn</a> 
+		<a href="mailto:{{email}}">Email</a>
+	</footer>
 </body>
 
 </html>
