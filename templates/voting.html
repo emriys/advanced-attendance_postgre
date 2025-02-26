@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Executives Election</title>
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/votingstyle.css')}}">
+
+</head>
+
+<body>
+	<header>
+		<div class="navbtn">
+			<button class="openbtn" onclick="openNav()">☰</button>
+			<div id="mySidebar" class="sidebar">
+				<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+				<br>
+				<a href="{{url_for('routes.index')}}">Home</a>
+				<a href="{{url_for('routes.polls')}}">Polls</a>
+			</div>
+		</div>
+		<div class="heading">
+			<img src="{{url_for('static', filename='images/LOGO.jpg')}}" alt="NIESAT Logo" width="100" height="100" />
+			<h1>Executives Election</h1>
+			<!-- <div class="balance">Account Balance: <i>&#8358;</i> {{balance}}</div>
+			<div class="credits">Vote Credits: {{credits}}</div> -->
+		</div>
+	</header>
+
+	<main>
+		<section class="voting-form">
+			<form class="form" method="POST" action="{{ url_for('routes.vote') }}">
+				<h3>President</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="President" name="President" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+				<h3>Vice President</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="VicePresident" name="VicePresident" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>General Secretary</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="GenSec" name="GenSec" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Asistant General Secretary</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="AssGenSec" name="AssGenSec" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Financial Secretary</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="FinSec" name="FinSec" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Treasurer</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="Treasurer" name="Treasurer" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Social Director</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="SocialDir" name="SocialDir" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Welfare Director</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="WelfareDir" name="WelfareDir" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Public Relations Officer, P.R.O</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="PRO" name="PRO" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Project Manager</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="ProjectMAN" name="ProjectMAN" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+
+				<h3>Provost</h3>
+				<label for="candidateSelect">Select a candidate:</label>
+				<select class="position-select" id="Provost" name="Provost" required="">
+					<option value="">Select a candidate</option>
+				</select>
+
+				<hr>
+				<br>
+				<div class="container">
+					<div class="msg-area"></div>
+
+					<h4>Enter your details to cast vote:</h4>
+					<label for="surname">Surname</label>
+					<input type="text" id="surname" name="surname" required>
+
+					<label for="statecode">State Code</label>
+					<input type="text" id="statecode" name="statecode" maxlength="11" minlength="1"
+						pattern="[Kk][Ww]/\d{2}[a-cA-C]/\d{4}"
+						title="Must contain correct and complete statecode: KW/XXX/XXXX" placeholder="KW/XXX/XXXX"
+						required>
+					<br>
+					<button class="vote-button" type="submit">Cast Vote</button>
+					<p class="cost"><span class="star">*</span> Each member can only vote once.</p>
+					<br>
+				</div>
+				<br>
+			</form>
+			<div class="button_container">
+				<p class="cost">
+				<h2>Keep track of who is winning. </h2>
+				<a href="{{url_for('routes.polls') }}"><button class="polls-button"> View Polls </button></a>
+				</p>
+				<br>
+				<br>
+				<br>
+			</div>
+		</section>
+	</main>
+
+	<script>
+		//document.getElementById('main').addEventListener('click', closeNav);
+		getCandidates();
+		const form = document.querySelector(".form");
+		const msgArea = document.querySelector(".msg-area");
+
+		form.addEventListener("submit", (event) => {
+			event.preventDefault();
+
+			// Collect selected votes
+			const votes = {};
+			document.querySelectorAll(".position-select").forEach(select => {
+				votes[select.name] = select.value; // { "president": "Golaith", "vicePresident": "Fola", ... }
+			});
+
+			// Collect voter details
+			const voterLastName = document.getElementById("surname").value;
+			const voterStateCode = document.getElementById("statecode").value;
+		
+			// Create JSON payload
+			const payload = {
+				surname: voterLastName,
+				statecode: voterStateCode,
+				votes: votes
+			};
+
+			const formData = new FormData(form);
+
+			// Send data to Flask backend
+			fetch("{{ url_for('routes.vote') }}", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(payload)
+			})
+			.then((response) => response.json())
+			.then((data) => {
+				if (data.success) {
+					successMsg(data.message);
+				} else {
+					errorMsg(data.message);
+				}
+			})
+			.catch(error => {
+				console.error("Error submitting vote:", error),
+				errorMsg("Error submitting vote: Server not connecting!")
+			});
+		});
+
+		function getCandidates() {
+			fetch("{{ url_for('routes.getCandidates') }}")
+				.then(response => response.json())
+				.then(data => {
+					const positions = {}; // Object to store candidates by position
+
+					// Organizing candidates into their respective positions
+					data.forEach(candidate => {
+						if (!positions[candidate.position]) {
+							positions[candidate.position] = [];
+						}
+						positions[candidate.position].push(candidate.last_name);
+					});
+
+					// Loop through each position and populate respective dropdown
+					Object.keys(positions).forEach(position => {
+						const dropdown = document.getElementById(position); // Assuming dropdown ID is the position name
+						if (dropdown) {
+							positions[position].forEach(last_name => {
+								const option = document.createElement("option");
+								option.value = last_name;
+								option.textContent = last_name;
+								dropdown.appendChild(option);
+							});
+						}
+					});
+				})
+				.catch(error => console.error("Error fetching candidates:", error));
+
+		}
+
+		function openNav() {
+			document.getElementById("mySidebar").style.width = "230px";
+			document.getElementById("main").style.marginLeft = "250px";
+		}
+
+		/* Set the width of the side navigation to 0 and the left margin of the page content to 0 */
+		function closeNav() {
+			document.getElementById("mySidebar").style.width = "0";
+			document.getElementById("main").style.marginLeft = "0";
+			document.querySelector('#body').addEventListener('click', closeNav)
+		}
+
+		function errorMsg(message) {
+			const msgArea = document.querySelector(".msg-area");
+			msgArea.innerHTML = message;
+			msgArea.classList.add("error-shown");
+
+			// Hide message after a delay
+			setTimeout(() => {
+				msgArea.innerHTML = "";
+				msgArea.classList.remove("error-shown");
+			}, 5000);
+		}
+
+		function successMsg(message) {
+			const msgArea = document.querySelector(".msg-area");
+			msgArea.innerHTML = message;
+			msgArea.classList.add("success-shown");
+
+			// Hide message after a delay
+			setTimeout(() => {
+				msgArea.innerHTML = "";
+				msgArea.classList.remove("success-shown");
+			}, 5000);
+		}
+
+		function pendingMsg(message) {
+			const msgArea = document.querySelector(".msg-area");
+			msgArea.innerHTML = message;
+			msgArea.classList.add("pending-shown");
+
+			// Hide message after a delay
+			setTimeout(() => {
+				msgArea.innerHTML = "";
+				msgArea.classList.remove("pending-shown");
+			}, 5000);
+		}
+
+	</script>
+
+</body>
+
+</html>

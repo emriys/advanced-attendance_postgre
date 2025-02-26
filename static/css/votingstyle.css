@@ -1,0 +1,333 @@
+/* Global styles */
+body {
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	font-family: Arial, sans-serif;
+	color: #333;
+	min-height: auto;
+	background-color: #f5f5f5;
+}
+
+/* Header styles */
+header {
+	background-color: #336699;
+	color: #fff;
+}
+
+.heading {
+	display: flex;
+	text-align: center;
+	align-items: center;
+	margin: 10px;
+	padding: 0 auto;
+	gap: 10px;
+	justify-content: center;
+}
+
+.balance {
+	order: -1;
+	/* Place the account balance div first */
+	margin-left: auto;
+}
+
+.credits {
+	order: 1;
+	margin-left: auto;
+}
+
+
+/* Sidebar styles */
+.sidebar {
+	height: 100%;
+	width: 0;
+	position: fixed;
+	z-index: 1;
+	top: 0;
+	left: 0;
+	background-color: #111;
+	overflow-x: hidden;
+	transition: 0.5s;
+	padding-top: 60px;
+	opacity: 0.9;
+}
+
+.sidebar a {
+	padding: 8px 8px 8px 32px;
+	text-decoration: none;
+	font-size: 30px;
+	font-weight: bold;
+	color: #fff;
+	display: block;
+	transition: 0.3s;
+}
+
+.sidebar a:hover {
+	color: #f1f1f1;
+}
+
+.sidebar .closebtn {
+	position: absolute;
+	top: 0;
+	right: 25px;
+	font-size: 36px;
+	margin-left: 50px;
+}
+
+.openbtn {
+	font-size: 20px;
+	cursor: pointer;
+	background-color: #111;
+	color: white;
+	padding: 10px 15px;
+	border: none;
+}
+
+.openbtn:hover {
+	background-color: #444;
+}
+
+/* Style the main content */
+main {
+	transition: margin-left .5s;
+	padding: 20px;
+}
+
+/* Set the width of the sidebar to 250px (collapsed) */
+.sidebar.collapsed {
+	width: 0px;
+}
+
+/* Set the width of the sidebar to 0 (expanded) */
+.sidebar.expanded {
+	width: 250px;
+}
+
+/* Set the margin to 250px (collapsed) */
+.main.collapsed {
+	margin-left: 0px;
+}
+
+/* Set the margin to 0 (expanded) */
+.main.expanded {
+	margin-left: 250px;
+}
+
+.logout-link {
+	color: #fff;
+	text-decoration: none;
+	font-size: 14px;
+	margin-top: 10px;
+}
+
+.logout-link:hover {
+	text-decoration: underline;
+}
+
+/* Main content styles */
+main {
+	transition: margin-left .5s;
+	/* If you want a transition effect */
+	margin: 0;
+}
+
+.voting-form {
+	display: flex;
+	flex-direction: column;
+	min-width: 70%;
+	max-width: 90%;
+	margin: auto auto;
+	position: relative;
+}
+
+.cost {
+	font-size: 19px;
+	text-align: center;
+}
+
+.star {
+	color: red;
+}
+
+label {
+	margin-bottom: 10px;
+	font-size: 20px;
+}
+
+select {
+	padding: 10px;
+	font-size: 20px;
+	margin-bottom: 20px;
+	border: none;
+	border-radius: 5px;
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	background-color: #f2f2f2;
+	border-radius: 5px;
+	box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+	padding: 20px;
+}
+
+.vote-button {
+	background-color: #336699;
+	color: #fff;
+	padding: 20px 40px;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.button-container {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+.polls-button {
+	background-color: #3498db;
+	border: none;
+	color: white;
+	padding: 15px 25px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 13px;
+	margin: 10px;
+	border-radius: 10px;
+	transition: background-color 0.3s, transform 0.2s;
+	cursor: pointer;
+}
+
+.polls-button:hover {
+	background-color: #2980b9;
+}
+
+.vote-button,
+.polls-button {
+	width: 70%;
+	max-width: 400px;
+	/* padding: 5px; */
+	font-size: 25px;
+	text-align: center;
+	align-items: center;
+	justify-content: center;
+}
+
+.button_credits {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	margin-top: 10px;
+}
+
+input {
+	width: 95%;
+	padding: 10px;
+	margin-bottom: 10px;
+	border: #111;
+	border-radius: 5px;
+}
+
+.msg-area {
+	margin-top: 0.5rem;
+	display: block;
+}
+
+.msg-area.error-shown {
+	background-color: #f8d7da;
+	/* Light red for error */
+	color: #721c24;
+	/* Dark red text */
+	border: 1px solid #f5c6cb;
+	/* Border matching the red shade */
+	border-radius: 6px;
+	/* Rounded corners */
+	padding: 0.5rem;
+	/* Space inside the box */
+	font-size: 1rem;
+	font-weight: 500;
+	/* Semi-bold for emphasis without being overwhelming */
+	text-align: center;
+	/* Center the text inside the box */
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	/* Add a light shadow for depth */
+	margin-top: 1rem;
+	/* Add space above the message area */
+	margin-bottom: 1rem;
+	/* Add space below the message area */
+}
+
+.msg-area.success-shown {
+	background-color: #d4edda;
+	/* Soft green for success */
+	color: #155724;
+	/* Dark green for contrast */
+	border: 1px solid #c3e6cb;
+	/* Subtle border matching the background */
+	border-radius: 4px;
+	/* Rounded corners */
+	padding: 0.5rem;
+	/* Space inside the box */
+	font-size: 1rem;
+	font-weight: 500;
+	/* Semi-bold for emphasis without being overwhelming */
+	text-align: center;
+	/* Center the text inside the box */
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	/* Add a light shadow for depth */
+	margin-top: 1rem;
+	/* Add space above the message area */
+	margin-bottom: 1rem;
+	/* Add space below the message area */
+}
+
+.msg-area.pending-shown {
+	background-color: #fff3cd;
+	/* Soft yellow for pending */
+	color: #856404;
+	/* Dark amber for contrast */
+	border: 1px solid #ffeeba;
+	/* Subtle border matching the background */
+	border-radius: 4px;
+	/* Rounded corners */
+	padding: 0.5rem;
+	/* Space inside the box */
+	font-size: 1rem;
+	font-weight: 500;
+	/* Semi-bold for emphasis without being overwhelming */
+	text-align: center;
+	/* Center the text inside the box */
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	/* Add a light shadow for depth */
+	margin-top: 1rem;
+	/* Add space above the message area */
+	margin-bottom: 1rem;
+	/* Add space below the message area */
+}
+
+
+/* Responsive styles */
+@media screen and (max-width: 2000px) {
+	main {
+		margin: 10px;
+	}
+
+	.voting-form {
+		width: auto;
+	}
+
+	/* On smaller screens, where height is less than 450px, change the style of the sidebar (less padding and a smaller font size) */
+	.sidebar {
+		padding-top: 15px;
+	}
+
+	.sidebar a {
+		font-size: 18px;
+	}
+}

@@ -59,6 +59,11 @@ document.querySelectorAll('.ajax-form').forEach((form) => {
         const confirmSubmit = document.getElementById('confirmBtn');
         confirmSubmit.addEventListener('click', function () {
             hidePopup();
+            const button = form.querySelector(".btn-primary");
+            const spinner = form.querySelector(".btnspinner");
+
+            spinner.classList.remove("hide");
+            button.disabled = true;
 
             const formData = new FormData(form); // Get form data
             //const alert = form.getElementById('msg-area');
@@ -74,6 +79,8 @@ document.querySelectorAll('.ajax-form').forEach((form) => {
             })
                 .then((response) => {
                     if (!response.ok) {
+                        spinner.classList.add("hide");
+                        button.disabled = false;
                         throw new Error(`Error: ${response.status}`);
                     }
                     return response.json(); // Adjust response handling as needed
@@ -92,6 +99,9 @@ document.querySelectorAll('.ajax-form').forEach((form) => {
                                 input.value = '';
                             }
                         });
+
+                        spinner.classList.add("hide");
+                        button.disabled = false;
                     }
                     // Clear password fields regardless of the outcome
                     form.querySelectorAll('input[type="password"]').forEach((input) => {
@@ -112,6 +122,8 @@ document.querySelectorAll('.ajax-form').forEach((form) => {
                     });
                     // Show an error message in the UI
                     alert('Submission failed. Please try again.');
+                    spinner.classList.add("hide");
+                    button.disabled = false;
                 });
 
         }, { once: true }); // Ensure the click event fires only once

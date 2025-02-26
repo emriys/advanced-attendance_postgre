@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Election Database</title>
+    <style>
+        #electionForm {
+            justify-content: center;
+
+        }
+
+        #statecodeInputDiv {
+            display: none;
+            margin-top: 10px;
+        }
+
+        #submit {
+            display: none;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        #msgArea {
+            margin: 10px;
+        }
+
+        main {
+            justify-content: center;
+        }
+        /* Styles for the popup window */
+        .popup-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            border: 1px solid #007BFF;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 9999;
+        }
+
+        .popup-container h2 {
+            margin-top: 0;
+        }
+
+        .popup-buttons {
+            text-align: right;
+        }
+
+        .popup-buttons button {
+            margin-left: 10px;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Clear Election Data</h1>
+    <main>
+        <div id="msgArea"></div>
+        <form id="electionForm" class="form">
+            <div>
+                <label for="statecodeSelect">Choose an option:</label>
+                <select id="statecodeSelect" name="statecodeSelect" onchange="toggleStateCodeInput()">
+                    <option value="">Select option</option>
+                    <option value="votes">All Candidate Votes</option>
+                    <option value="voters">All Voters</option>
+                </select>
+            </div>
+
+            <button id="submit" type="button" onclick="handleData()">Clear</button>
+        </form>
+    </main>
+    <div class="overlay" id="overlay"></div>
+    <div class="popup-container" id="popupContainer">
+        <h2>Confirm Submission</h2>
+        <p>Are you sure you want to delete this data?</p>
+        <div class="popup-buttons">
+            <button id="confirmBtn">Yes</button>
+            <button id="cancelBtn">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript to toggle input visibility
+        function toggleStateCodeInput() {
+            const select = document.getElementById('statecodeSelect');
+            const btn = document.getElementById('submit');
+
+            if (select.value) {
+                submit.style.display = 'block';
+            }
+            else {
+                submit.style.display = 'none';
+            }
+        }
+
+        function handleData() {
+            event.preventDefault();
+            showPopup();
+            document.getElementById('confirmBtn').onclick = function () {
+                hidePopup();
+                const statecodeSelect = document.getElementById('statecodeSelect').value;
+                console.log(statecodeSelect);
+                const form = document.getElementById("electionForm");
+                //console.log(statecode);
+
+                const formData = new FormData();
+                if (statecodeSelect === "votes") {
+                    formData.append('action', "votes");  // For "All", append "All" as statecode
+                    //console.log("All selected");
+                } else if (statecodeSelect === "voters") {
+                    formData.append('action', "voters");  // For specific, append the user-provided statecode
+                    //console.log("Specific state code entered");
+                }
+
+                //console.log(formData);
+
+                fetch("{{url_for('routes.adminclearelection')}}", {
+                    method: "POST",
+                    body: formData
+                })
+                    .then((response) => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('SERVER ERROR.');
+                    })
+                    .then((data) => {
+                        msgArea(data.message);
+                    })
+                    .catch((error) => {
+                        //console.log('Error:', error);
+                        msgArea("Failed to clear records!");
+                    });
+            }
+        }
+
+        function msgArea(message) {
+            const msgArea = document.getElementById('msgArea');
+            msgArea.innerHTML = message;
+            setTimeout(() => {
+                msgArea.innerHTML = "";
+            }, 2000);
+        }
+
+        // Function to show the popup window
+        function showPopup() {
+            document.getElementById('overlay').style.display = 'block'
+            document.getElementById('popupContainer').style.display = 'block';
+        }
+
+        // Function to hide the popup window
+        function hidePopup() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('popupContainer').style.display = 'none';
+        }
+
+        // Handle cancellation when the user clicks "Cancel"
+        document.getElementById('cancelBtn').addEventListener('click', function () {
+            // Hide the popup window
+            hidePopup();
+        });
+
+    </script>
+</body>
+
+</html>

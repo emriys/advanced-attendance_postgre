@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "base.html" %}
 
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" as="style"
         onload="this.onload=null;this.rel='stylesheet'"
@@ -24,6 +25,8 @@
                 <a href="signin">Mark Attendance</a>
                 <a href="attendance_logs">Attendance Logs</a>
                 <a href="settings">Settings</a>
+                <a href="election">Set Election</a>
+                <a href="election_clear">Clear Election</a>
                 <br>
                 <br>
                 <br>
@@ -60,7 +63,9 @@
                                         name="state_code" type="text" placeholder="KW/XXX/XXXX" value="" required="">
 
                                 </div>
-                                <button type="button" class="btn btn-primary" id="check-button">Check</button>
+                                <button type="button" class="btn btn-primary" id="check-button">Check
+                                    <span id="spinner" class="btnspinner hide"></span>
+                                </button>
 
                                 <div class="form-group">
                                     <label class="form-label" for="balance">Amount</label>
@@ -78,7 +83,9 @@
                                     </select>
                                 </div>
 
-                                <button class="btn btn-primary" id="update" name="submit" type="submit">Update</button>
+                                <button class="btn btn-primary update" id="update" name="submit" type="submit">Update
+                                    <span id="spinner" class="updatespn btnspinner hide"></span>
+                                </button>
                             </form>
                         </div>
                     </div>

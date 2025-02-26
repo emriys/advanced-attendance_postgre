@@ -26,6 +26,7 @@ class Users(db.Model, UserMixin):
     # Define the relationship with AttendanceLog. Cascade deletes Attendance Logs
     # automatically once a user is deleted
     attendance_logs = db.relationship('AttendanceLog', back_populates='user', lazy=True, cascade="all, delete-orphan")
+    voters = db.relationship('Voters', back_populates='user', lazy=True, cascade="all, delete-orphan")
 
 class AttendanceLog(db.Model):
     __tablename__ = 'attendance_log'
@@ -70,3 +71,18 @@ class DeviceLog(db.Model):
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.now)
+
+class Candidates(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    last_name = db.Column(db.String(50), nullable=False)
+    position = db.Column(db.String(50), nullable=False)
+    votes = db.Column(db.Integer, default=0)
+    
+class Voters(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False) # Foreign Key linking to Users table
+    last_name = db.Column(db.String(50), nullable=False)
+    voting_status = db.Column(db.String(3), default="No")
+    
+    # Relationship with Users
+    user = db.relationship('Users', back_populates='voters')

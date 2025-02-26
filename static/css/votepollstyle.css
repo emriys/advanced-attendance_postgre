@@ -1,0 +1,131 @@
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background-color: #f2f2f2;
+	font-family: 'Segoe UI', sans-serif;
+}
+
+.container {
+	max-width: 600px;
+	margin: 30px auto;
+	background-color: #fff;
+	padding: 30px;
+	border-radius: 10px;
+	box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+h1 {
+	font-size: 36px;
+	text-align: center;
+	margin-bottom: 20px;
+	color: #2d2d2d;
+}
+h2{
+	margin: 5px 5px;
+	text-align: center;
+	font-size: 30px;
+	color: #2c3e50;
+}
+
+.candidate {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 20px;
+}
+
+.name {
+	font-size: 15px;
+	font-weight: bold;
+	color: #2d2d2d;
+	margin-bottom: 10px;
+}
+
+.progress {
+	background-color: #dcdcdc;
+	height: 15px;
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+.bar {
+	height: 100%;
+	background-color: #18af1d;
+	/* background-color: #4CAF50; */
+	color: #fff;
+	font-size: 16px;
+	font-weight: bold;
+	line-height: 15px;
+	text-align: center;
+	transition: width 0.5s;
+}
+
+.percentage {
+	font-size: 15px;
+	font-weight: bold;
+	color: #4CAF50;
+	margin-top: 10px;
+	text-align: center;
+}
+
+.total-votes {
+	font-size: 16px;
+	font-weight: bold;
+	margin-top: 20px;
+}
+
+.divider {
+    border: none;
+    height: 2px;
+    background-color: #ccc; /* Grey color */
+    margin: 20px 0;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+.left-button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+  }
+  
+  .left-button:hover {
+    background-color: darkblue;
+    cursor: pointer;
+  }
+  
+  .right-button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+  }
+  
+  .right-button:hover {
+    background-color: darkred;
+    cursor: pointer;
+  }
+
+  @media screen and (max-width: 768px) {
+	main {
+		margin: 10px;
+	}
+
+	.voting-form {
+		width: 100%;
+	}
+	/* On smaller screens, where height is less than 450px, change the style of the sidebar (less padding and a smaller font size) */
+	.sidebar {padding-top: 15px;}
+	.sidebar a {font-size: 18px;}
+}

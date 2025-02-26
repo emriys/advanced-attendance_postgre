@@ -84,6 +84,12 @@ input {
   border-radius: 5px;
 }
 
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
 .button {
   background-color: #3498db;
   border: none;
@@ -91,35 +97,27 @@ input {
   padding: 10px 20px;
   text-align: center;
   text-decoration: none;
-  display: inline-block;
+  display: flex;
   font-size: 16px;
   margin-top: 10px;
   cursor: pointer;
   border-radius: 5px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  width:90%;
 }
 
 .button:hover {
   background-color: #2980b9;
 }
 
-
-/* button[type="submit"] {
-  background-color: #3498db;
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  margin-top: 10px;
-  cursor: pointer;
-  border-radius: 5px;
+.button:disabled{
+  background-color: #002b5c;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
-
-button[type="submit"]:hover {
-  background-color: #2980b9;
-} */
 
 p {
   margin-top: 20px;

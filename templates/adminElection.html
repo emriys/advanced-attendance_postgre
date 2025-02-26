@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Settings</title>
+</head>
+
+<body>
+
+    <style>
+        #container {
+            width: auto;
+            height: auto;
+            background-color: #336699;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #container img {
+            justify-content: center;
+            align-items: center;
+            margin-left: 50%;
+        }
+
+        input {
+            max-width: 90%;
+        }
+
+        img {
+            width: 40px;
+            margin-left: 20px;
+            margin-top: 20px;
+        }
+
+        .todo-input {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            min-width: 70%;
+            max-width: 90%;
+            margin: auto auto;
+            position: relative;
+        }
+
+        input,
+        select {
+            max-width: 90%;
+            padding: 10px;
+            font-size: auto;
+            margin-bottom: 0px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #task-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #task-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin-bottom: 1px;
+            border-radius: 4px;
+        }
+
+        #task-list li.low {
+            background: #d4edda;
+        }
+
+        #task-list li.medium {
+            background: #ffeeba;
+        }
+
+        #task-list li.high {
+            background: #f8d7da;
+        }
+
+        .filters button {
+            margin-left: 10px;
+            margin-right: 5px;
+        }
+
+        #add-task-btn {
+            margin-right: 0;
+            margin-left: 50%;
+            background-color: #2ec96e;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #add-task-btn:hover {
+            background-color: #1fa155;
+        }
+
+        h3 {
+            margin: 10 0;
+            text-align: center;
+            color: #ffff;
+            text-decoration-color: #fff;
+        }
+
+        /* Styles for the popup window */
+        .popup-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            border: 1px solid #007BFF;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 9999;
+        }
+
+        .popup-container h2 {
+            margin-top: 0;
+        }
+
+        .popup-buttons {
+            text-align: right;
+        }
+
+        .popup-buttons button {
+            margin-left: 10px;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+        }
+    </style>
+    </head>
+
+    <body>
+        <div id="container">
+            <form action="" method="POST" class="form">
+                <h3> Add a new election candidate</h3>
+                <img src="image/todo 2.jpg" alt="">
+                <div class="msg-area" style="margin-bottom: 10px; color:#fff; font-size:20px"></div>
+                <div class="todo-input">
+                    <input type="text" name="Candidate" id="candidate" placeholder="Enter Candidate Surname"
+                        required="">
+                    <br>
+                    <select id="position" name="Position" required="">
+                        <option value="">Select a position</option>
+                        <option value="President">President</option>
+                        <option value="VicePresident">Vice President</option>
+                        <option value="GenSec">Secretary General</option>
+                        <option value="AssGenSec">Asistant Secretary General </option>
+                        <option value="FinSec">Financial Secretary</option>
+                        <option value="Treasurer">Treasurer</option>
+                        <option value="SocialDir">Social Director</option>
+                        <option value="WelfareDir">Welfare Director</option>
+                        <option value="PRO">Public Relations Officer</option>
+                        <option value="ProjectMAN">Project Manager</option>
+                        <option value="Provost">Provost</option>
+                    </select> <br>
+                    <button type="submit" id="add-task-btn">Add Candidate</button>
+                </div>
+            </form>
+            <div class="filters">
+                <ul id="task-list">
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="overlay" id="overlay"></div>
+        <div class="popup-container" id="popupContainer">
+            <h2>Confirm Submission</h2>
+            <p>Are you sure you want to delete the candidate?</p>
+            <div class="popup-buttons">
+                <button id="confirmBtn">Yes</button>
+                <button id="cancelBtn">Cancel</button>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                fetchCandidates();
+                const candidateInput = document.getElementById("candidate");
+                const positionInput = document.getElementById("position");
+                const addTaskBtn = document.getElementById("add-task-btn");
+                const taskList = document.getElementById("task-list");
+                const filters = document.querySelectorAll(".filters button");
+
+                let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+                const saveTasks = () => {
+                    localStorage.setItem("tasks", JSON.stringify(tasks));
+                };
+
+                const renderTasks = (filter = "all") => {
+                    taskList.innerHTML = "";
+                    const filteredTasks = tasks.filter(task =>
+                        filter === "all" ? true : task.priority === filter
+                    );
+
+                    filteredTasks.forEach((task, index) => {
+                        const li = document.createElement("li");
+                        li.className = task.priority;
+                        li.setAttribute("draggable", "true");
+                        li.innerHTML = `
+                  <span id="filter">${task.text} - ${task.position}     </span>
+                  <button onclick="deleteTask(${index})">Delete</button>
+                `;
+                        taskList.appendChild(li);
+
+                        li.addEventListener("dragstart", e => e.dataTransfer.setData("index", index));
+                        li.addEventListener("dragover", e => e.preventDefault());
+                        li.addEventListener("drop", e => {
+                            e.preventDefault();
+                            const draggedIndex = e.dataTransfer.getData("index");
+                            const targetIndex = index;
+                            [tasks[draggedIndex], tasks[targetIndex]] = [tasks[targetIndex], tasks[draggedIndex]];
+                            saveTasks();
+                            renderTasks(filter);
+                        });
+                    });
+                };
+
+                addTaskBtn.addEventListener("click", () => {
+                    event.preventDefault();
+                    const form = document.querySelector(".form");
+                    const candidate = candidateInput.value.trim();
+                    const position = positionInput.value;
+
+                    if (!candidate && !position) {
+                        alert("Please fill in all fields.");
+                        return;
+                    }
+
+                    const formData = new FormData(form);
+
+                    fetch("{{ url_for('routes.adminElection') }}", {
+                        method: "POST",
+                        body: formData
+                    })
+                        .then((response) => {
+                            if (response.ok) {
+                                return response.json();
+                            } throw new Error("Server Error");
+                        })
+                        .then((data) => {
+                            if (data.success) {
+                                MsgArea(data.message);
+                                candidateInput.value = "";
+                                positionInput.value = "";
+                                //fetchCandidates();
+                            } else {
+                                MsgArea(data.message);
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Error during submission: ", error);
+                            MsgArea(error);
+                        })
+                        fetchCandidates();
+                });
+
+                filters.forEach(button => {
+                    button.addEventListener("click", () => {
+                        renderTasks(button.id.replace("filter-", ""));
+                    });
+                });
+
+                window.deleteTask = index => {
+                    showPopup();
+                    const confirmSubmit = document.getElementById('confirmBtn');
+                    confirmSubmit.addEventListener('click', function () {
+                        const candidate = tasks[index].text;
+                        const position = tasks[index].position;
+                        const formData = new FormData();
+                        formData.append("Candidate", candidate);
+                        formData.append("Position", position);
+
+                        hidePopup();
+
+                        fetch("{{ url_for('routes.adminElection') }}", {
+                            method: "DELETE",
+                            headers: {
+                                'X-Requested-With': "Delete"
+                            },
+                            body: formData
+                        })
+                            .then((response) => {
+                                if (response) {
+                                    return response.json();
+                                } throw new Error("Server Error!");
+                            })
+                            .then((data) => {
+                                if (data.success) {
+                                    MsgArea(data.message);
+                                    tasks.splice(index, 1);
+                                    saveTasks();
+                                    renderTasks();
+                                    fetchCandidates();
+                                } else {
+                                    MsgArea(data.message)
+                                }
+                            })
+                            .catch((error) => {
+                                console.error("Error during submission: ", error);
+                                MsgArea(error);
+                            })
+                            tasks.splice(index, 1);
+                            saveTasks();
+                            renderTasks();
+                            fetchCandidates();
+                    });
+
+                };
+
+                //renderTasks();
+            });
+
+            function fetchCandidates() {
+                fetch("{{ url_for('routes.getCandidates') }}")
+                    .then(response => response.json())
+                    .then(data => {
+                        // Clear existing list
+                        const taskList = document.getElementById("task-list");
+                        taskList.innerHTML = "";
+                        // Populate list with received data
+                        data.forEach(candidate => {
+                            const li = document.createElement("li");
+                            li.innerHTML = `
+                                <span>${candidate.last_name} - ${candidate.position}</span>
+                                <button onclick="deleteCandidate('${candidate.last_name}', '${candidate.position}')">Delete</button>
+                            `;
+                            taskList.appendChild(li);
+                        });
+                    })
+                    .catch(error => console.error("Error fetching candidates:", error));
+            }
+
+            function deleteCandidate(candidate, position) {
+                showPopup();
+            
+                document.getElementById('confirmBtn').onclick = function () {
+                    hidePopup();
+
+                    const formData = new FormData();
+                    formData.append("Candidate", candidate);
+                    formData.append("Position", position);
+            
+                    fetch("{{ url_for('routes.adminElection') }}", {
+                        method: "DELETE",
+                        headers: {
+                            'X-Requested-With': "Delete"
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        MsgArea(data.message);
+                        fetchCandidates(); // Refresh list after deletion
+                    })
+                    .catch(error => console.error("Error deleting candidate:", error));
+                };
+            }
+            
+            function MsgArea(message) {
+                const msgArea = document.querySelector(".msg-area");
+                msgArea.innerHTML = message;
+                //msgArea.classList.add("success-shown");
+
+                // Hide message after a delay
+                setTimeout(() => {
+                    msgArea.innerHTML = "";
+                    msgArea.classList.remove("success-shown");
+                }, 2000);
+            }
+
+            // Function to show the popup window
+            function showPopup() {
+                document.getElementById('overlay').style.display = 'block'
+                document.getElementById('popupContainer').style.display = 'block';
+            }
+
+            // Function to hide the popup window
+            function hidePopup() {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('popupContainer').style.display = 'none';
+            }
+
+            // Handle cancellation when the user clicks "Cancel"
+            document.getElementById('cancelBtn').addEventListener('click', function () {
+                // Hide the popup window
+                hidePopup();
+            });
+
+
+        </script>
+
+    </body>
+
+</html>

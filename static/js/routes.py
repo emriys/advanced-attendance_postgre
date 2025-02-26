@@ -1,20 +1,19 @@
-from flask import Flask,request,Response,render_template,session,redirect,url_for,jsonify,send_file,send_from_directory,flash,Blueprint
+from flask import Flask,request,Response,render_template,session,redirect,url_for,jsonify,send_from_directory,send_file,flash,Blueprint
 from flask_session import Session
-from flask_socketio import SocketIO, emit, send
 import pandas as pd
 from datetime import datetime,time,timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from models import *
-from blueprints import forms
+from blueprints.forms import *
 import csv
 from io import BytesIO
 from fpdf import FPDF
 from flask import make_response
 import xlsxwriter
 import io
+import pytz
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -24,7 +23,7 @@ from reportlab.lib.units import inch
 from sqlalchemy import or_
 from werkzeug.security import check_password_hash
 from functools import wraps
-from extensions import socketio, logging, pytz, nigeria_tz
+import logging
 
 # Create a blueprint
 routes = Blueprint('routes', __name__)
@@ -39,14 +38,18 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Configure logging
+logging.basicConfig(level=logging.WARNING)  # Logs infos, warnings and errors
+
+# Define time zones
+nigeria_tz = pytz.timezone("Africa/Lagos")  # Nigeria is UTC+1
+
 # ---------------- ROUTES ---------------- #
 
 @routes.route('/')
 @routes.route('/home')
 def index():
-    linkedIn = "https://linkedin.com/in/adbulsalam-bode-okunade-04249220b"
-    email = "bodeokunadeab@gmail.com"
-    return render_template("index.html", linkedIn=linkedIn, email=email)
+    return render_template("index.html")
 
 @routes.route('/history')
 def history():
@@ -55,7 +58,6 @@ def history():
 
 @routes.route('/register', methods=['GET','POST'])
 def register():
-    from blueprints.forms import MemberRegisterForm 
     form = MemberRegisterForm()
     if form.validate_on_submit():
         user = Users.query.filter_by(state_code=form.state_code.data.upper()).first()
@@ -73,23 +75,17 @@ def register():
         
             confirm = check_user_reg_exists(user_data=user_data)
             if confirm :
-                return jsonify({'success':True,"message":'Registration successful',"redirect":"/"})
+                return jsonify({'success':True,"message":'Registration successful',"redirect":"/signin"})
             else :
                 return jsonify({'success':False,"message":'Server Error: Could not add user'})
         
     return render_template('register.html', title='Register', form=form)
 
-@routes.route('/admin/signin', methods=['GET', 'POST'])
-@admin_required
+@routes.route('/signin', methods=['GET', 'POST'])
 def signin():
     # Sign in clicked 
     # colllect details 
     # check if user registered 
-    if 'admin_logged_in' not in session:
-        flash("Session expired. Please log in again.", "warning")
-        return redirect(url_for('routes.admin'))
-    
-    from blueprints.forms import SigninForm
     form = SigninForm()
     
     if request.method=="POST":
@@ -109,7 +105,10 @@ def signin():
             last_name = form.last_name.data.upper() # Last name
             statecode = form.state_code.data.upper()
             device_id = form.deviceId.data
-            ip_address = form.Ip.data
+            
+            # valid_device = validate_device(device_id)
+            # if valid_device != "":
+            #     return jsonify({'success':False,"message":valid_device})
             
             confirm_reg = check_user_reg_exists(statecode=statecode, last_name=last_name)
             if not confirm_reg :
@@ -123,7 +122,7 @@ def signin():
                     
                 else:
                     # If late, handle late sign-in
-                    current_time = get_local_time()
+                    current_time = datetime.now().time()
                     
                     if late_start <= current_time <= late_end:
                         amount = settings.lateness_fine
@@ -131,15 +130,14 @@ def signin():
                         # Check if user already in late list
                         late_status = check_latefile(statecode)
                         if not late_status:
-                            new_entry = LateLog(
+                            new_late_log = LateLog(
                                 transaction_date=datetime.now().date(),
                                 state_code=statecode,
                                 request_type="Late Sign-In",
                                 amount=amount,
-                                status="Pending",
-                                log_time = current_time
+                                status="Pending"
                             )
-                            db.session.add(new_entry)
+                            db.session.add(new_late_log)
                             db.session.commit()
                         # Pass deviceId to the payment page
                         return redirect(url_for('routes.payment', statecode=statecode, device_id=device_id))
@@ -147,11 +145,13 @@ def signin():
                     
                     elif early_start <= current_time < late_start:
                         # Regular sign-in (early sign-in)
-                        # Pass user unique id to record attendance function
                         confirm_attendance = record_attendance(confirm_reg)
             
                         if confirm_attendance:
-                            return jsonify({'success':True,"message":f'Attendance logged for {statecode}'})
+                            # Log device in the database
+                            # new_device = DeviceLog(device_id=device_id, timestamp=datetime.utcnow())
+                            # db.session.add(new_device)
+                            # db.session.commit()
                             return render_template("thankyouregister.html")
                         else:
                             return """<h1>Server Error!</h1> <h4><p>Failed to log attendance</p></h4>""", 500
@@ -215,11 +215,10 @@ def admin():
 @routes.route('/admin/dashboard', methods=['GET', 'POST'])
 @admin_required
 def admindash():
-    
     if 'admin_logged_in' not in session:
         flash("Session expired. Please log in again.", "warning")
         return redirect(url_for('routes.admin'))
-    
+
     # Check if the request is an AJAX request by inspecting headers
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
@@ -232,8 +231,7 @@ def admindash():
                 'state_code': log.state_code,
                 'request_type': log.request_type,
                 'amount': log.amount,
-                'status': log.status,
-                'log_time': log.log_time.strftime('%H:%M:%S')
+                'status': log.status
             }
             for log in logs
         ]
@@ -243,6 +241,7 @@ def admindash():
     # If the request is not an AJAX request
     # Get all pending latecomer requests from the LateLog table
     pending_requests = LateLog.query.all()
+    #filter_by(status="Pending").all()
 
     return render_template('admindashboard.html', pending_requests=pending_requests)
 
@@ -252,14 +251,14 @@ def admin_settings():
     if 'admin_logged_in' not in session:
         flash("Session expired. Please log in again.", "warning")
         return redirect(url_for('routes.admin'))
-
+    
     # Get Admin Settings from the database and update webpage
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     if is_ajax:
         settings = getSettings()
         return jsonify(settings)
-    
+
     return render_template ("adminsettings.html")
 
 @routes.route('/admin/attendance_logs', methods=['GET', 'POST'])
@@ -322,7 +321,7 @@ def clearLatelog():
     if request.method == "POST":
         statecode = request.form["statecode"].upper()
         # print(statecode)
-        if statecode == "ALL":
+        if statecode == "All":
             try:
                 db.session.query(LateLog).delete()  # Deletes all rows
                 db.session.commit()  # Commit the transaction
@@ -388,10 +387,6 @@ def clear_user_logs():
                     attd_deleted_rows = AttendanceLog.query.filter_by(user_id=user.id).delete()
                     db.session.commit()
                     
-                     # Delete all associated late logs
-                    late_deleted_rows = LateLog.query.filter_by(state_code=statecode).delete()
-                    db.session.commit()
-                    
                     # Delete user record
                     deleted_rows = Users.query.filter(
                         Users.state_code == statecode,  # Case-insensitive
@@ -399,7 +394,7 @@ def clear_user_logs():
                     ).delete()
                     db.session.commit()
                     
-                    if deleted_rows > 0  or attd_deleted_rows > 0 or late_deleted_rows > 0:
+                    if deleted_rows > 0  or attd_deleted_rows > 0:
                         return jsonify({"message":f"All records of {statecode} deleted successfully."}), 200
                     else:
                         return jsonify({"message": f"No records found for state code {statecode}."}), 200
@@ -410,7 +405,7 @@ def clear_user_logs():
 
     return render_template("clearuser.html")
 
-@routes.route('/admin/clear_devicelog', methods=['GET', 'POST'])
+@routes.route('/admin/clear_device_log', methods=['GET', 'POST'])
 @admin_required
 def clearDevicelog():
     if 'admin_logged_in' not in session:
@@ -449,6 +444,7 @@ def getDetails():
     if latecomer_details:
         amount = latecomer_details.amount
         return jsonify({'success': True, 'message': amount}), 200
+        # return jsonify(amount)
     
     return jsonify({'success': False, 'message': 'User not found'}), 404
 
@@ -464,33 +460,19 @@ def update_latecomer():
     
     try:
         # Query the LateLog table to find the user
-        latecomer = LateLog.query.filter_by(state_code=statecode, status="Approved").first()
+        Latecomer = LateLog.query.filter_by(state_code=statecode, status="Pending").first()
 
-        if not latecomer:
+        if not Latecomer:
             return jsonify({'success': False, 'message': 'User not found'}), 404
 
         # Update the status of payment in the LateLog table
-        if latecomer and status=="Approved" and amount != "":
-            latecomer.status = status
-            latecomer.amount = 0
+        if Latecomer and status=="Approved" and amount != "":
+            Latecomer.status = status
+            Latecomer.amount = 0
             db.session.commit()
-            
-            ############################
-            # Add Late comer to attendance instantly
-            user = Users.query.filter_by(state_code=statecode).first()
-            # Check if user attendance is registered already
-            attendanceStatus = check_user_attendance_exists(statecode)
-            if attendanceStatus != "":
-                return jsonify({'success':False,"message":attendanceStatus})
-            # Add late attendance to database
-            if user:
-                confirm_attendance = record_attendance(user)
-            if confirm_attendance:
-                pop_latecomer(statecode)
-            #############################
-            
             return jsonify({'success': True, 'message': f'Approved'}), 200
         elif status == "Pending" :
+            # pass
             return jsonify({'success': True, 'message': f'Still Pending'}), 200
  
     except Exception as e:
@@ -501,9 +483,12 @@ def update_latecomer():
     return redirect(url_for('routes.admindash'))
 
 @routes.route('/payment/late-signin', methods=['GET', 'POST'])
+# def payment(statecode,device_id):
 def payment():
     statecode = request.args.get('statecode')
-
+    device_id = request.args.get('device_id')  # Get deviceId from query parameters
+    # Add unique deviceId to session
+    session[f"device_{statecode}"] = device_id
     # Check Latecomer
     latecomer = LateLog.query.filter_by(state_code=statecode).first()
     
@@ -545,9 +530,6 @@ def check_status():
     except SQLAlchemyError as e:
         # Handle database connection or query errors
         return jsonify({"error": str(e)}), 500
-    
-    finally:
-        db.session.close() # Closes the session to avoid open queries from piling up
 
 # Use this to handle Monthly Due requests
 @routes.route('/admin/pending_due_requests', methods=['GET'])
@@ -592,10 +574,10 @@ def export_attendance():
     attendance_data = collect_attendance_data_for_range(meeting_date, meeting_date2, meeting_day)
     # Sort data for easier readability
     attendance_data = sort_by_batch_year_and_state_code(attendance_data)
-    
+
     date_range = get_date_range(meeting_date, meeting_date2, meeting_day)
     data = preprocess_attendance_data_for_range(attendance_data,date_range)
-        
+
     if meeting_date != meeting_date2:
         meeting_date=f"{meeting_date}_to_{meeting_date2}"
     else : meeting_date = meeting_date
@@ -620,23 +602,26 @@ def export_attendance():
         download_name=f"NIESAT_attendance_{meeting_date}.{extension}"
     )
 
-@routes.route('/user_attendance_log', methods=['GET','POST'])
+@routes.route('/user-attendance-history', methods=['GET', 'POST'])
 def user_logs():
-    from blueprints.forms import AttendanceForm
     form = AttendanceForm()
 
     if request.method == "POST" and form.validate_on_submit():
         statecode = form.statecode.data.upper()
         start_date = form.start_date.data.strftime('%Y-%m-%d')
         end_date = form.end_date.data.strftime('%Y-%m-%d')
-                
+        
+        logging.info(statecode, start_date, end_date)
+        
         ###########
         # Get the set meeting day from AdminSettings then collect attendance
         settings = AdminSettings.query.first()
         meeting_day = settings.meeting_day
+        logging.info("Meeting Day: ", meeting_day)
         
         # Generate the date range for everyday
         date_range = get_date_range(start_date, end_date, meeting_day)
+        logging.info("Date Range: ", date_range)
         
         # Loop through each date and fetch attendance logs
         all_attendance_data = []
@@ -658,7 +643,9 @@ def user_logs():
                     })
                 except AttributeError as e:
                     print(f"Error processing log: {log}. Error: {e}")
+        logging.info("All Attendance Data: ", all_attendance_data)
         data_request = preprocess_attendance_data_for_range(all_attendance_data,date_range)
+        logging.info("Final Data: ", data_request)
         ###########
         
         if len(data_request) <= 0:
@@ -671,36 +658,6 @@ def user_logs():
 @routes.route('/thankyou')
 def thankyou():
     return render_template('thankyouregister.html')
-
-@routes.route('/validate-device', methods=['POST'])
-def validate_device():
-    data = request.get_json()
-    device_id = data.get('deviceId')
-    latitude = data.get('latitude')
-    longitude = data.get('longitude')
-    # print(f"Device ID: {device_id}")
-    # print(f"Latitude: {latitude}")
-    # print(f"Longitude: {longitude}")
-
-    if not all([device_id, latitude, longitude]):
-        return jsonify({'success': False, 'message': 'Missing required parameters.'}), 400
-
-    # Retrieve admin-configured location (example)
-    # admin_settings = AdminSettings.query.first()
-    # required_latitude = admin_settings.required_latitude
-    # required_longitude = admin_settings.required_longitude
-    # location_tolerance = admin_settings.location_tolerance  # in degrees
-
-    # Verify location
-    # if abs(required_latitude - latitude) > location_tolerance or abs(required_longitude - longitude) > location_tolerance:
-    #     return jsonify({'success': False, 'message': 'Location does not match the required area.'}), 403
-
-    # Check if the device is already logged
-    existing_device = DeviceLog.query.filter_by(device_id=device_id).first()
-    if existing_device:
-        return jsonify({'success': False, 'message': 'Device already used to sign-in today.'}), 403
-
-    return jsonify({'success': True, 'message': 'Validation successful.'})
 
 @routes.route('/tracker', methods=["GET", 'POST'])
 def tracker():
@@ -744,168 +701,39 @@ def getLocation():
     
     return render_template('Tracking_Id.html')
 
+# @routes.route('/validate-device', methods=['POST'])
+def validate_device(device_id):
+    # Check if the device is already logged
+    existing_device = DeviceLog.query.filter_by(device_id=device_id).first()
+    current_time = get_local_time()
+    if existing_device:
+        one_hour_ago = current_time - timedelta(hours=1)
+        
+        # If within last hour and exceeded 5 attempts
+        if existing_device.timestamp >= one_hour_ago and existing_device.request_count >= 5:
+            return "Too many sign-in attempts. Try again later."
+        
+        # Reset if older than 1 hour
+        if existing_device.timestamp < one_hour_ago:
+            existing_device.request_count = 1
+        else:
+            existing_device.request_count += 1
+        
+        existing_device.timestamp = get_local_time() # Update database
+        
+        return "This device has already signed in today."
+    
+    else:
+        # First request for this user
+        # new_device = DeviceLog(device_id=device_id, request_count=1, timestamp=current_time)
+        db.session.add(DeviceLog(device_id=device_id, request_count=1, timestamp=current_time))
+        db.session.commit()
+        return ""
+
 # Route to serve the shared worker file
 @routes.route('/sharedWorker.js')
 def serve_shared_worker():
     return send_from_directory('static', 'js/sharedWorker.js', mimetype='application/javascript')
-
-@routes.route('/get_candidates')
-def getCandidates():
-    candidates = get_candidates_data()
-    return jsonify(candidates)
-
-@routes.route('/polls')
-def polls():
-    return render_template("votepolls.html")
-    
-@routes.route('/polls/data')
-def polls_data():
-    # Get candidate votes
-    candidates = db.session.query(
-        Candidates.position,
-        Candidates.last_name,
-        Candidates.votes
-    ).all()
-
-    # Get total votes cast (count unique voters)
-    total_votes_cast = db.session.query(func.count(Voters.user_id)).scalar()
-
-    # Format response
-    candidates_data = [
-        {
-            "position": c.position, 
-            "last_name": c.last_name, 
-            "Percentage": round((c.votes / total_votes_cast) * 100, 0) if total_votes_cast > 0 else 0  # Prevent ZeroDivisionError
-         }
-        for c in candidates
-    ]
-
-    return jsonify({"candidates": candidates_data, "total_votes": total_votes_cast})
-
-@routes.route('/election', methods=["GET", "POST"])
-def vote():
-    if request.method == "POST":
-        data = request.json
-        last_name = data.get("surname").strip().upper()
-        state_code = data.get("statecode").upper()
-        votes = data.get("votes")
-        
-        # Validate voter exists
-        voter = Users.query.filter(
-                    Users.state_code == state_code,
-                    Users.last_name.ilike(last_name)   # Case-insensitive
-                ).first()
-
-        if not voter:
-            return jsonify({"success":False,"message": "Only registered members can vote."}), 200
-        
-        # Confirm that user hasn't voted already
-        if voter:
-            voted = Voters.query.filter_by(user_id=voter.id).first()
-            if voted:
-                return jsonify({"success": False,"message":f"StateCode, {state_code}, has already voted!"}), 200
-
-        # Process each vote
-        for position, candidate_name in votes.items():
-            candidate = Candidates.query.filter_by(position=position, last_name=candidate_name).first()
-            if candidate:
-                candidate.votes += 1
-            else:
-                return jsonify({"success": False,"message": f"Candidate {candidate_name} for {position} not found"}), 400
-
-        # Mark voter as voted
-        new_voter = Voters(
-            user_id=voter.id,  # Assuming `user` is an instance of Users
-            last_name=last_name,
-            voting_status = "Yes"
-        )
-        db.session.add(new_voter)
-        db.session.commit()
-        
-        return jsonify({"success":True, "message":"Votes casted successfully!"})
-    return render_template('voting.html')
-
-@routes.route('/admin/election', methods=['GET', 'POST', 'DELETE'])
-@admin_required
-def adminElection():
-    if 'admin_logged_in' not in session:
-        flash("Session expired. Please log in again.", "warning")
-        return redirect(url_for('routes.admin'))
-    
-    if request.method=="DELETE":
-        candidate = request.form["Candidate"].strip().upper()
-        position = request.form["Position"]
-        
-        if not all([candidate, position]):
-            return jsonify({"success": False, "message":"Missing Parameters"})
-        
-        
-        # Delete all associated candidates
-        deleted_rows = Candidates.query.filter(
-                Candidates.position == position,
-                Candidates.last_name.ilike(candidate)   # Case-insensitive
-            ).delete()
-        db.session.commit()
-        
-        if deleted_rows > 0:
-            return jsonify({"success":True,"message":f"Candidate {candidate} for {position} cleared."}), 200
-        else:
-            return jsonify({"success":False,"message": f"No records found for {candidate} for {position}."}), 200
-    
-    elif request.method == "POST":            
-        candidate = request.form["Candidate"].strip().upper()
-        position = request.form["Position"]
-        
-        if not all([candidate, position]):
-            return jsonify({"success": False, "message":"Missing Parameters"})
-        
-        # Validate candidate exists
-        candidateexists = Candidates.query.filter(
-                    Candidates.position == position,
-                    Candidates.last_name.ilike(candidate)   # Case-insensitive
-                ).first()
-        
-        if candidateexists:
-            return jsonify({"success":False,"message": "Candidate already in database."}), 200
-        
-        # # Mark voter as voted
-        new_candidate = Candidates(
-            last_name=candidate,
-            position=position,
-            votes=0
-        )
-        db.session.add(new_candidate)
-        db.session.commit()
-        
-        candidates = get_candidates_data()
-        
-        return jsonify({"success": True, "message":"Candidate Added"})
-    
-    return render_template ("adminElection.html")
-
-@routes.route('/admin/election_clear', methods=['GET', 'POST'])
-@admin_required
-def adminclearelection():
-    if 'admin_logged_in' not in session:
-        flash("Session expired. Please log in again.", "warning")
-        return redirect(url_for('routes.admin'))
-    
-    # action = request.args.get('statecodeSelect')
-    if request.method == "POST":
-        action = request.form["action"].upper()
-
-        if action == "VOTES":
-            attd_deleted_rows = delete_all_votes()
-            return jsonify({"message":f"All votes for candidates deleted successfully."}), 200
-            
-        elif action == "VOTERS" :
-            delete_all_voters()
-            return jsonify({"message":f"All voters deleted successfully."}), 200
-        
-        else:
-            return jsonify({"message":f"No parameter."}), 200
-
-    return render_template("clearElection.html")
 
 # ---------------- FUNCTIONS ---------------- #
 
@@ -1001,7 +829,8 @@ def record_attendance(user):
     # Record user attendance for the day
     new_attendance = AttendanceLog(
         user_id=user.id,  # Assuming `user` is an instance of Users
-        sign_in_time=get_local_time(),
+        sign_in_time=datetime.now().time(),
+        # ip_address=request.remote_addr,
         meeting_date=datetime.now().date()
     )
     db.session.add(new_attendance)
@@ -1013,7 +842,6 @@ def record_attendance(user):
 def update_latecomer_status(stateCode):
     # Find the late log for the state code
     late_log = LateLog.query.filter_by(state_code=stateCode).first()
-    # print(late_log)
     
     if late_log:
         late_log.amount = 0
@@ -1086,9 +914,11 @@ def get_local_time():
 def getSettings():
     # Get Admin Settings
     settings = AdminSettings.query.first()
-    if not settings:
-        return {}  # Return empty dict if no settings exist
+    
     settings_data = {
+        # "early_start": settings.early_arrival_start,
+        # "late_start": settings.late_arrival_start,
+        # "late_end": settings.late_arrival_end,
         "lateness_fine": settings.lateness_fine,
         "monthly_due": settings.monthly_due,
         "account_name": settings.account_name,
@@ -1096,10 +926,7 @@ def getSettings():
         "bank_name": settings.bank_name,
         "admin_username": settings.admin_username,
         "meeting_day": settings.meeting_day,
-        "allow_attendance": settings.allow_attendance,
-        "early_start": settings.early_arrival_start.strftime("%H:%M:%S"),
-        "late_start": settings.late_arrival_start.strftime("%H:%M:%S"),
-        "late_end": settings.late_arrival_end.strftime("%H:%M:%S")
+        "allow_attendance": settings.allow_attendance
     }
     
     return settings_data
@@ -1276,7 +1103,7 @@ def get_date_range(date1=None,date2=None,meeting_day=None, **kwargs):
             "Friday": 4, "Saturday": 5, "Sunday": 6
         }
         
-        # Set target day to admin meeting day
+        # Set target day to admin set meeting day
         target_day = day_mapping.get(meeting_day)
         
         if target_day is None:
@@ -1294,7 +1121,7 @@ def get_date_range(date1=None,date2=None,meeting_day=None, **kwargs):
 def preprocess_attendance_data_for_range(attendance_data, date_range):
     # Dictionary to store users and their attendance
     users = {}
-    if attendance_data and "gender" in attendance_data[0]:
+    if "gender" in attendance_data:
         for record in attendance_data:
             user_key = f"{record['first_name']} {record['middle_name']} {record['last_name']}"
             if user_key not in users:
@@ -1306,7 +1133,7 @@ def preprocess_attendance_data_for_range(attendance_data, date_range):
                 }
             # Mark present for the specific date
             users[user_key][record["meeting_date"]] = "P"
-
+    
     # If no "gender" key:value is available in attendance_data
     else:
         for record in attendance_data:
@@ -1319,7 +1146,7 @@ def preprocess_attendance_data_for_range(attendance_data, date_range):
                 }
             # Mark present for the specific date
             users[user_key][record["meeting_date"]] = "Present"
-    
+
     # Convert dictionary to list of dictionaries
     return list(users.values())
 
@@ -1353,24 +1180,3 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     print("User distance to location: ",c * R)
 
     return R * c  # Distance in meters
-
-def get_candidates_data():
-    candidates = Candidates.query.all()
-    # Structure the data as a list of dictionaries
-    candidates_data = [{"last_name": c.last_name, "position": c.position} for c in candidates]
-    # print(candidates_data)
-
-    return candidates_data
-
-def delete_all_votes():
-    # Reset votes for all candidates
-    db.session.query(Candidates).update({Candidates.votes: 0})
-    db.session.commit()
-    print("All votes have been reset to zero.")
-    
-def delete_all_voters():
-    # Delete all voters from the database
-    db.session.query(Voters).delete()
-    db.session.commit()
-    print("All voters have been deleted.")
-    

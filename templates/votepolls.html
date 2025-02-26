@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Poll Results</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/votepollstyle.css') }}">
+</head>
+
+<body>
+	<div class="container">
+		<h1>Poll Results</h1>
+
+		<hr>
+
+		<div id="poll-results"></div>
+
+		<div class="total-votes">Total votes: <span id="total-votes">0</span></div>
+
+		<br><br>
+
+		<div class="buttons">
+			<a href="{{ url_for('routes.vote') }}"><button class="right-button">Cast Your Vote</button></a>
+		</div>
+	</div>
+
+	<script>
+		function fetchPollData() {
+			fetch("/polls/data")
+				.then(response => response.json())
+				.then(data => {
+					const pollResults = document.getElementById("poll-results");
+					document.getElementById("total-votes").textContent = data.total_votes;
+
+					pollResults.innerHTML = ""; // Clear previous results
+
+					const groupedByPosition = {};
+
+					// Group candidates by position
+					data.candidates.forEach(candidate => {
+						if (!groupedByPosition[candidate.position]) {
+							groupedByPosition[candidate.position] = [];
+						}
+						groupedByPosition[candidate.position].push(candidate);
+					});
+
+					// Sort each group by percentage (highest to lowest)
+					for (const position in groupedByPosition) {
+						groupedByPosition[position].sort((a, b) => b.Percentage - a.Percentage);
+					}
+
+					// Render grouped candidates
+					for (const [position, candidates] of Object.entries(groupedByPosition)) {
+						const positionDiv = document.createElement("div");
+						positionDiv.classList.add("position-group");
+						positionDiv.innerHTML = `<h2>${position}</h2>`;
+
+						candidates.forEach(candidate => {
+							const candidateDiv = document.createElement("div");
+							candidateDiv.classList.add("candidate");
+							candidateDiv.innerHTML = `
+                                <div class="name">${candidate.last_name}</div>
+                                <div class="progress">
+                                    <div class="bar" style="width: ${candidate.Percentage}%;">${candidate.Percentage}%</div>
+                                </div>
+                            `;
+							positionDiv.appendChild(candidateDiv);
+						});
+
+						pollResults.appendChild(positionDiv);
+						// Add horizontal line after each position group
+						const hr = document.createElement("hr");
+						hr.classList.add("divider");  // Add a class for styling (optional)
+						pollResults.appendChild(hr);
+					}
+
+					// Update total votes
+					document.getElementById("total-votes").textContent = data.total_votes;
+				})
+				.catch(error => console.error("Error fetching poll data:", error));
+		}
+
+		// Fetch poll data immediately and refresh every 15 seconds
+		fetchPollData();
+		setInterval(fetchPollData, 15000);
+	</script>
+</body>
+
+</html>

@@ -3,6 +3,7 @@
 
 <head>
 	<title>Welcome to NIESAT</title>
+	{% include "base.html" %}
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,11 +33,14 @@
 			<a href="{{ url_for('routes.pay_monthly_due') }}"><button class="button">
 					<h2>Pay Monthly Dues</h2>
 				</button></a>
+			<a href="{{ url_for('routes.vote') }}"><button class="button">
+					<h2>Election</h2>
+				</button></a>
 		</section>
 	</main>
 
 	<footer>
-		Copyright © 2025. Developed by Abdulsalam. Contacts: <a href="{{linkedIn}}" target="_blank">LinkedIn</a> 
+		Copyright © 2025. Developed by Abdulsalam. Contacts: <a href="{{linkedIn}}" target="_blank">LinkedIn</a>
 		<a href="mailto:{{email}}">Email</a>
 	</footer>
 </body>

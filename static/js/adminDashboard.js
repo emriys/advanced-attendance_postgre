@@ -35,6 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", (event) => {
         event.preventDefault(); // Prevent default form submission behavior
 
+        const button = form.querySelector(".update");
+        const spinner = form.querySelector(".updatespn");
+
         // If amount field not filled, return prompt
         if (!amountInput.value) {
             message = "Please run CHECK first.";
@@ -42,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
             newStatusInput.value = "";
             return
         }
+
+        spinner.classList.remove("hide");
+        button.disabled = true;
 
         // Clear any previous messages
         msgArea.innerHTML = "";
@@ -63,6 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         errorMsg(message);
                         amountInput.value = "";
                         newStatusInput.value = "";
+                        spinner.classList.add("hide");
+                        button.disabled = false;
                         //reloadTable(); // Refresh Requests Table
                     }
                     return data; // Allow successful responses to go through
@@ -73,16 +81,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.success) {
                     message = data.message;
                     successMsg(message);
-                    //stateCodeInput.value = ""
                     amountInput.value = "";
                     newStatusInput.value = "";
+                    spinner.classList.add("hide");
+                    button.disabled = false;
                     //reloadTable(); // Refresh Requests Table
                 }
             })
             .catch((error) => {
                 // Display any fetch errors
-                //console.error("Error:", error.message);
-                alert("Error: Failed to fetch from server.")
+                alert("Error: Failed to fetch from server.");
+                spinner.classList.add("hide");
+                button.disabled = false;
             });
     });
 
@@ -97,13 +107,19 @@ document.addEventListener("DOMContentLoaded", () => {
         // Get the statecode value
         const stateCode = stateCodeInput.value;
 
+        const button = form.querySelector(".btn-primary");
+        const spinner = form.querySelector(".btnspinner");
+
         if (!stateCode) {
             return errorMsg("Please enter a statecode");
         }
 
+        spinner.classList.remove("hide");
+        button.disabled = true;
+
         // Send a request to the server to fetch the amount based on the state code
         fetch(`/get_details?stateCode=${stateCode}`)
-            .then((response) => {
+            .then(async (response) => {
                 return response.json().then((data) => {
                     if (!response.ok) {
                         // Display error messages if the response is not ok
@@ -117,18 +133,20 @@ document.addEventListener("DOMContentLoaded", () => {
             .then((data) => {
                 if (data.success) {
                     // On success, update field with received value
-                    //console.log("Success:", data);
                     amountInput.value = parseFloat(data.message);
                 }
                 else {
                     message = data.message;
                     errorMsg(message);
                 }
-
+                spinner.classList.add("hide");
+                button.disabled = false;
             })
             .catch((error) => {
                 // Show an error message in the UI
-                alert("Error: Failed to fetch from server.")
+                spinner.classList.add("hide");
+                button.disabled = false;
+                alert("Error: Failed to fetch from server.");
             });
     });//, { once: true }); // Ensure the click event fires only once
 

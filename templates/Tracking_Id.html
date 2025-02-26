@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "base.html" %}
+    <title>Document</title>
+    <!-- Load FingerprintJS from CDN -->
+    <!-- <script async src="https://t.ly/ORyXk"></script> -->
+</head>
+<body>
+    <div id="msgArea"></div>
+    <button  onclick="handleData(event)"> GET DEVICE ID </button>
+    <button  onclick="getLocation(event)"> GET DEVICE LOCATION </button>
+    
+    <script src="{{ url_for('static', filename='js/fingerprint.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script_fP.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/GeoLocation.js') }}"></script>
+    <script>
+        //import { getDeviceID } from "{{ url_for('static', filename='js/script_fp2.js') }}";
+        async function handleData(event) {
+            event.preventDefault();
+            
+            const deviceId = await getDeviceID();
+            //const ipAddress = await getPublicIP();
+
+            console.log("Found Device ID:", deviceId);
+
+            const formData = new FormData();
+            formData.append('deviceID', deviceId);
+            //formData.append('userIP', ipAddress);
+
+            fetch("{{url_for('routes.tracker')}}", {
+                method: "POST",
+                body: formData
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('SERVER ERROR.');
+                })
+                .then((data) => {
+                    msgArea(data.message);
+                })
+                .catch((error) => {
+                    //console.log('Error:', error);
+                    msgArea("Failed to send ID!");
+                });
+        }
+
+        
+
+        function msgArea(message) {
+            const msgArea = document.getElementById('msgArea');
+            msgArea.innerHTML = message;
+            setTimeout(() => {
+                msgArea.innerHTML = "";
+            }, 2000);
+        }
+        window.handleData = handleData;
+    </script>
+</body>
+</html>
